@@ -191,8 +191,47 @@ static void init_styles(void)
 #endif
 }
 
+
+static lv_obj_t * kb;
+
+static void kb_event_cb(lv_obj_t * _kb, lv_event_t e)
+{
+    lv_keyboard_def_event_cb(kb, e);
+
+    if(e == LV_EVENT_CANCEL) {
+        if(kb) {
+//            lv_obj_set_height(tv, LV_VER_RES);
+            lv_obj_del(kb);
+            kb = NULL;
+        }
+    }
+}
+
+static void ta_event_cb(lv_obj_t * ta, lv_event_t e)
+{
+    if(e == LV_EVENT_RELEASED) {
+        if(kb == NULL) {
+            lv_coord_t kb_height = 160;//LV_MATH_MIN(LV_VER_RES / 2, LV_DPI * 4 / 3);
+//            lv_obj_set_height(tv, LV_VER_RES - kb_height);
+            kb = lv_keyboard_create(lv_scr_act(), NULL);
+//    lv_obj_add_style(kb, LV_CONT_PART_MAIN, &style_box);
+            lv_obj_set_height(kb, kb_height);
+            lv_obj_align(kb, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
+            lv_obj_set_event_cb(kb, kb_event_cb);
+
+            lv_indev_wait_release(lv_indev_get_act());
+        }
+        lv_textarea_set_cursor_hidden(ta, false);
+//        lv_page_focus(t1, lv_textarea_get_label(ta), LV_ANIM_ON);
+        lv_keyboard_set_textarea(kb, ta);
+    } else if(e == LV_EVENT_DEFOCUSED) {
+        lv_textarea_set_cursor_hidden(ta, true);
+    }
+}
+
 static void init_blinky_gui(void)
 {
+/*
 	for(int i = 0; i < 12; i++){
 		int x_index = i % 4;
 		int y_index = i / 4;
@@ -201,7 +240,7 @@ static void init_blinky_gui(void)
 		lv_obj_set_size(image_bg[i], 80, 80);
 		lv_img_set_src(image_bg[i], &img_noise_background);		
 	}
-
+*/
 	// The connected header needs to be created before the top_header, to appear behind
 	connected_background = lv_label_create(lv_scr_act(), NULL);
 	lv_obj_add_style(connected_background, LV_LABEL_PART_MAIN, &style_con_bg);
@@ -262,6 +301,17 @@ static void init_blinky_gui(void)
 	lv_label_set_text(label_led_state, "Off");
 	lv_label_set_align(label_led_state, LV_LABEL_ALIGN_CENTER);
 	lv_obj_add_style(label_led_state, LV_LABEL_PART_MAIN, &style_label_value);
+
+    lv_obj_t * ta = lv_textarea_create(lv_scr_act(), NULL);
+//    lv_obj_add_style(ta, LV_CONT_PART_MAIN, &style_box);
+
+    lv_textarea_set_one_line(ta, true);
+    lv_textarea_set_text(ta, "");
+    lv_textarea_set_placeholder_text(ta, "Name");
+    lv_obj_set_event_cb(ta, ta_event_cb);
+    lv_obj_set_width(ta, 180);
+    lv_obj_set_pos(ta, 105, 60);
+
 
 	gui_show_connected_elements(false);
 }
