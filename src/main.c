@@ -53,14 +53,14 @@ void main(void)
 	gui_config_t gui_config = {.event_callback = on_gui_event};
 	gui_init(&gui_config);
 
-	app_ble_config_t app_ble_config = {.event_callback = on_app_ble_event};
-	app_ble_init(&app_ble_config);
+	//app_ble_config_t app_ble_config = {.event_callback = on_app_ble_event};
+	//app_ble_init(&app_ble_config);
 
-	app_ble_start_advertising();
+	//app_ble_start_advertising();
 
-	printk("Advertising started\n");
+	//printk("Advertising started\n");
 
-	gui_set_bt_state(GUI_BT_STATE_ADVERTISING);
+	//gui_set_bt_state(GUI_BT_STATE_ADVERTISING);
 
 	while (1) {
 		k_sleep(K_MSEC(1000));
