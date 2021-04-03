@@ -15,6 +15,10 @@
 #include <bluetooth/mesh/models.h>
 #include <dk_buttons_and_leds.h>
 #include "model_handler.h"
+#include <bluetooth/mesh/access.h>
+
+
+#define MAX_GUS_NODES 10
 
 /* Light switch behavior */
 
@@ -30,9 +34,24 @@ static void status_handler(struct bt_mesh_lvl_cli *cli,
 			   struct bt_mesh_msg_ctx *ctx,
 			   const struct bt_mesh_lvl_status *status);
 
-static struct button buttons[4] = {
-	[0 ... 3] = { .client = BT_MESH_LVL_CLI_INIT(&status_handler) },
+static struct button buttons[MAX_GUS_NODES] = {
+	[0 ... MAX_GUS_NODES-1] = { .client = BT_MESH_LVL_CLI_INIT(&status_handler) },
 };
+
+
+static int gus_badge_count(void)
+{
+int count = 0;
+    for (int i=0; i<10; ++i) {
+        printk(" %d, ", buttons[i].client.pub.addr);
+
+        if (buttons[i].client.pub.addr != 0) {
+            ++count;
+        }
+    }    return count;
+}
+
+
 
 static void status_handler(struct bt_mesh_lvl_cli *cli,
 			   struct bt_mesh_msg_ctx *ctx,
@@ -59,12 +78,18 @@ static void button_handler_cb(uint32_t pressed, uint32_t changed)
 		if (!(pressed & changed & BIT(i))) {
 			continue;
 		}
+
+                if (i==3) {
+                    printk("mesh count %d\n", gus_badge_count());
+                }
+
               count+= 0x2000;
 		struct bt_mesh_lvl_set set = {
 //			.lvl = !buttons[i].status,
 			.lvl = count,
 		};
-                printk("lvl=%x\n",set.lvl);
+ //               printk("lvl=%x  #elem %d\n",set.lvl, bt_mesh_elem_count());
+
 		int err;
 
 		/* As we can't know how many nodes are in a group, it doesn't
@@ -133,7 +158,7 @@ static struct bt_mesh_health_srv health_srv = {
 
 BT_MESH_HEALTH_PUB_DEFINE(health_pub, 0);
 
-static struct bt_mesh_elem elements[] = {
+static struct bt_mesh_elem elements[MAX_GUS_NODES] = {
 	BT_MESH_ELEM(1,
 		     BT_MESH_MODEL_LIST(
 			     BT_MESH_MODEL_CFG_SRV,
@@ -152,6 +177,31 @@ static struct bt_mesh_elem elements[] = {
 		     BT_MESH_MODEL_LIST(
 			     BT_MESH_MODEL_LVL_CLI(&buttons[3].client)),
 		     BT_MESH_MODEL_NONE),
+	BT_MESH_ELEM(5,
+		     BT_MESH_MODEL_LIST(
+			     BT_MESH_MODEL_LVL_CLI(&buttons[4].client)),
+		     BT_MESH_MODEL_NONE),
+	BT_MESH_ELEM(6,
+		     BT_MESH_MODEL_LIST(
+			     BT_MESH_MODEL_LVL_CLI(&buttons[5].client)),
+		     BT_MESH_MODEL_NONE),
+	BT_MESH_ELEM(7,
+		     BT_MESH_MODEL_LIST(
+			     BT_MESH_MODEL_LVL_CLI(&buttons[6].client)),
+		     BT_MESH_MODEL_NONE),
+	BT_MESH_ELEM(8,
+		     BT_MESH_MODEL_LIST(
+			     BT_MESH_MODEL_LVL_CLI(&buttons[7].client)),
+		     BT_MESH_MODEL_NONE),
+	BT_MESH_ELEM(9,
+		     BT_MESH_MODEL_LIST(
+			     BT_MESH_MODEL_LVL_CLI(&buttons[8].client)),
+		     BT_MESH_MODEL_NONE),
+	BT_MESH_ELEM(10,
+		     BT_MESH_MODEL_LIST(
+			     BT_MESH_MODEL_LVL_CLI(&buttons[9].client)),
+		     BT_MESH_MODEL_NONE),
+
 };
 
 static const struct bt_mesh_comp comp = {
