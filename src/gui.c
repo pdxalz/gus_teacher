@@ -17,6 +17,7 @@ const struct device *display_dev;
  /*********************
   *      DEFINES
   *********************/
+#define NAMELIST_LEN (MAX_GUS_NODES * (MAX_NAME_LENGTH+3))
 
   /**********************
    *      TYPEDEFS
@@ -44,6 +45,7 @@ static void keyboard_create(lv_obj_t* parent);
 /**********************
  *  STATIC VARIABLES
  **********************/
+char namelist[NAMELIST_LEN];
  
 
 
@@ -181,8 +183,55 @@ static void mode_buttons(lv_obj_t* parent)
 
 
 }
-#define NAMELIST_LEN (MAX_GUS_NODES * (MAX_NAME_LENGTH+3))
-char namelist[NAMELIST_LEN];
+
+static void update_namelist(void) 
+{
+    int item = lv_roller_get_selected(roller);
+    gd_get_namelist(namelist, NAMELIST_LEN);
+    lv_roller_set_options(roller, namelist, LV_ROLLER_MODE_NORMAL);
+    lv_roller_set_selected(roller, item, LV_ANIM_OFF);
+}
+
+static void update_checkboxes(void)
+{
+    int item = lv_roller_get_selected(roller);
+    lv_checkbox_set_checked(cb_virus, has_virus(item));
+    lv_checkbox_set_checked(cb_mask, has_mask(item));
+    lv_checkbox_set_checked(cb_vaccine, has_vaccine(item));
+}
+
+static void roller_event_cb(lv_obj_t * obj, lv_event_t event)
+{
+    if(event == LV_EVENT_VALUE_CHANGED) {
+        update_checkboxes();
+    }
+}
+
+static void cb_virus_event_cb(lv_obj_t * obj, lv_event_t event)
+{
+    if(event == LV_EVENT_VALUE_CHANGED) {
+        set_infected(lv_roller_get_selected(roller), lv_checkbox_is_checked(obj));
+        update_namelist();
+    }    
+}
+
+static void cb_mask_event_cb(lv_obj_t * obj, lv_event_t event)
+{
+    if(event == LV_EVENT_VALUE_CHANGED) {
+        set_masked(lv_roller_get_selected(roller), lv_checkbox_is_checked(obj));
+        update_namelist();
+    }    
+}
+
+static void cb_vaccine_event_cb(lv_obj_t * obj, lv_event_t event)
+{
+    if(event == LV_EVENT_VALUE_CHANGED) {
+        set_vaccine(lv_roller_get_selected(roller), lv_checkbox_is_checked(obj));
+        update_namelist();
+    }    
+}
+
+
 static void badges_create(lv_obj_t* parent)
 {
     const int zoff = 30;
@@ -195,10 +244,10 @@ static void badges_create(lv_obj_t* parent)
     lv_roller_set_visible_row_count(roller, 5);
     lv_obj_set_width(roller, 80);
     lv_obj_set_pos(roller, 10, 5);
+    lv_obj_set_event_cb(roller, roller_event_cb);
 
 //    lv_roller_set_options(roller, "Alpha\nBravo\nCharlie\nDelta\nEcho\nZulu", LV_ROLLER_MODE_NORMAL);
-    gd_get_namelist(namelist, NAMELIST_LEN);
-    lv_roller_set_options(roller, namelist, LV_ROLLER_MODE_NORMAL);
+    update_namelist();
 
     btn_edit_name = lv_btn_create(parent, NULL);
     lv_obj_set_event_cb(btn_edit_name, btn_edit_name_event_cb);
@@ -214,16 +263,19 @@ static void badges_create(lv_obj_t* parent)
     lv_obj_add_style(cb_virus, LV_CONT_PART_MAIN, &style_box);
     lv_checkbox_set_text(cb_virus, "Virus");
     lv_obj_set_pos(cb_virus, 105, 45 + zoff);
+    lv_obj_set_event_cb(cb_virus, cb_virus_event_cb);
 
     cb_mask = lv_checkbox_create(parent, NULL);
     lv_obj_add_style(cb_mask, LV_CONT_PART_MAIN, &style_box);
     lv_checkbox_set_text(cb_mask, "Mask");
     lv_obj_set_pos(cb_mask, 105, 80 + zoff);
+    lv_obj_set_event_cb(cb_mask, cb_mask_event_cb);
 
     cb_vaccine = lv_checkbox_create(parent, NULL);
     lv_obj_add_style(cb_vaccine, LV_CONT_PART_MAIN, &style_box);
     lv_checkbox_set_text(cb_vaccine, "Vaccine");
     lv_obj_set_pos(cb_vaccine, 105, 110 + zoff);
+    lv_obj_set_event_cb(cb_vaccine, cb_vaccine_event_cb);
 
     btn_scan = lv_btn_create(parent, NULL);
     label = lv_label_create(btn_scan, NULL);

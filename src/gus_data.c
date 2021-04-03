@@ -15,6 +15,46 @@ struct gus_node {
 
 struct gus_node gus_list[MAX_GUS_NODES];
 
+bool has_virus(int index) 
+{
+    __ASSERT_NO_MSG(index < MAX_GUS_NODES);
+    return gus_list[index].virus;
+}
+
+void set_infected(int index, bool virus)
+{
+    __ASSERT_NO_MSG(index < MAX_GUS_NODES);
+    gus_list[index].virus =  virus;
+}
+
+bool has_mask(int index) 
+{
+    __ASSERT_NO_MSG(index < MAX_GUS_NODES);
+    return gus_list[index].mask;
+}
+
+void set_masked(int index, bool mask)
+{
+    __ASSERT_NO_MSG(index < MAX_GUS_NODES);
+    gus_list[index].mask =  mask;
+}
+
+
+bool has_vaccine(int index) 
+{
+    __ASSERT_NO_MSG(index < MAX_GUS_NODES);
+    return gus_list[index].vaccine;
+}
+
+void set_vaccine(int index, bool vaccine)
+{
+    __ASSERT_NO_MSG(index < MAX_GUS_NODES);
+    gus_list[index].vaccine =  vaccine;
+}
+
+
+
+
 char * status_symbol(int index)
 {
     if (gus_list[index].virus) {
