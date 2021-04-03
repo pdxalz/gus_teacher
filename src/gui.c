@@ -5,6 +5,8 @@
 #include <lvgl.h>
 #include <stdio.h>
 #include <string.h>
+#include "gus_config.h"
+#include "gus_data.h"
 
 const struct device *display_dev;
 
@@ -179,20 +181,24 @@ static void mode_buttons(lv_obj_t* parent)
 
 
 }
-
+#define NAMELIST_LEN (MAX_GUS_NODES * (MAX_NAME_LENGTH+3))
+char namelist[NAMELIST_LEN];
 static void badges_create(lv_obj_t* parent)
 {
     const int zoff = 30;
 
     roller = lv_roller_create(parent, NULL);
     lv_obj_add_style(roller, LV_CONT_PART_MAIN, &style_box);
+    lv_roller_set_align(roller, LV_LABEL_ALIGN_LEFT);
     lv_obj_set_style_local_value_str(roller, LV_CONT_PART_MAIN, LV_STATE_DEFAULT, "Roller");
     lv_roller_set_auto_fit(roller, false);
     lv_roller_set_visible_row_count(roller, 5);
     lv_obj_set_width(roller, 80);
     lv_obj_set_pos(roller, 10, 5);
 
-    lv_roller_set_options(roller, "Alpha\nBravo\nCharlie\nDelta\nEcho\nZulu", LV_ROLLER_MODE_NORMAL);
+//    lv_roller_set_options(roller, "Alpha\nBravo\nCharlie\nDelta\nEcho\nZulu", LV_ROLLER_MODE_NORMAL);
+    gd_get_namelist(namelist, NAMELIST_LEN);
+    lv_roller_set_options(roller, namelist, LV_ROLLER_MODE_NORMAL);
 
     btn_edit_name = lv_btn_create(parent, NULL);
     lv_obj_set_event_cb(btn_edit_name, btn_edit_name_event_cb);
@@ -790,6 +796,8 @@ void gui_set_bt_led_state(bool led_is_on)
 
 void gui_run(void)
 {
+gd_init();
+
 	display_dev = device_get_binding(CONFIG_LVGL_DISPLAY_DEV_NAME);
 
 	if (display_dev == NULL) {

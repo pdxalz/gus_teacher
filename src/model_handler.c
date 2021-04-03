@@ -16,9 +16,7 @@
 #include <dk_buttons_and_leds.h>
 #include "model_handler.h"
 #include <bluetooth/mesh/access.h>
-
-
-#define MAX_GUS_NODES 10
+#include "gus_config.h"
 
 /* Light switch behavior */
 
