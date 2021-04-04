@@ -58,6 +58,9 @@ void on_gui_event(gui_event_t *event)
                     model_handler_provision();
                     gui_update_namelist();
                     break;
+            case GUI_EVT_IDENTIFY:
+                    model_handler_set_state(event->element, GUS_ST_IDENTIFY);
+                    break;
     }
 }
 

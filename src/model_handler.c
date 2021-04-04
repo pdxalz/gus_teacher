@@ -78,17 +78,10 @@ static void button_handler_cb(uint32_t pressed, uint32_t changed)
 			continue;
 		}
 
-                if (i==3) {
-                    printk("mesh count %d\n", gus_badge_count());
-                }
-
-              count+= 0x2000;
+                count+= 0x2000;
 		struct bt_mesh_lvl_set set = {
-//			.lvl = !buttons[i].status,
 			.lvl = count,
 		};
- //               printk("lvl=%x  #elem %d\n",set.lvl, bt_mesh_elem_count());
-
 		int err;
 
 		/* As we can't know how many nodes are in a group, it doesn't
@@ -228,9 +221,22 @@ void model_handler_provision(void)
     int index = 0;
     for (int i=0; i<MAX_GUS_NODES; ++i) {
         if (buttons[i].client.pub.addr != 0) {
-            gd_add_node(index, names[index], buttons[i].client.pub.addr, index==0, false, false);
+            gd_add_node(index, names[index], i, i==0, false, false);
             ++index;
         }
+    }
+}
+
+void model_handler_set_state(uint16_t index, gus_state_t state)
+{
+    struct bt_mesh_lvl_set set = {
+        .lvl = state,
+    };
+    int err;
+
+    err = bt_mesh_lvl_cli_set(&buttons[index].client, NULL, &set, NULL);
+    if (err) {
+        printk("identify %d failed %d\n", index, err);
     }
 }
 

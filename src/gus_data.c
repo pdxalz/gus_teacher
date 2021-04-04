@@ -5,9 +5,11 @@
 #include "gus_data.h"
 #include <lvgl.h>
 
+#define ELEMENT_NOT_CONNECTED 0xffff
+
 struct gus_node {
     char name[MAX_NAME_LENGTH];
-    uint16_t addr;
+    uint16_t element;
     bool virus;
     bool mask;
     bool vaccine;
@@ -53,6 +55,12 @@ void set_vaccine(int index, bool vaccine)
 }
 
 
+uint16_t get_element(int index)
+{
+    __ASSERT_NO_MSG(index < MAX_GUS_NODES);
+    return gus_list[index].element;
+}
+
 
 
 char * status_symbol(int index)
@@ -69,10 +77,11 @@ char * status_symbol(int index)
     return "  ";
 }
 
+
 void gd_init(void)
 {
     for (int i=0; i<MAX_GUS_NODES; ++i) {
-        gd_add_node(i, "", 0, false, false, false);
+        gd_add_node(i, "", ELEMENT_NOT_CONNECTED, false, false, false);
     }
 
 #if 0 // test data
@@ -88,12 +97,12 @@ void gd_init(void)
 #endif
 }
 
-void gd_add_node(int index, char * name, uint16_t addr, bool virus, bool mask, bool vaccine)
+void gd_add_node(int index, char * name, uint16_t element, bool virus, bool mask, bool vaccine)
 {
     __ASSERT_NO_MSG(index < MAX_GUS_NODES);
 
     strncpy(gus_list[index].name, name, MAX_NAME_LENGTH);
-    gus_list[index].addr = addr;
+    gus_list[index].element = element;
     gus_list[index].virus = virus;
     gus_list[index].mask = mask;
     gus_list[index].vaccine = vaccine;
@@ -105,7 +114,7 @@ void gd_get_namelist(char * buf, int length)
     int pos = 0;
     buf[0] = '\0';
     for (int i=0; i<MAX_GUS_NODES; ++i) {
-        if (gus_list[i].addr == 0) {
+        if (gus_list[i].element == ELEMENT_NOT_CONNECTED) {
             break;
         }
         strncpy(&buf[pos], status_symbol(i), length - pos); 
