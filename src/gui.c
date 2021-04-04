@@ -49,6 +49,9 @@ char namelist[NAMELIST_LEN];
  
 static gui_event_t m_gui_event;
 static gui_callback_t m_gui_callback = 0;
+// Create a message queue for handling external GUI commands
+K_MSGQ_DEFINE(m_gui_cmd_queue, sizeof(gui_message_t), 8, 4);
+
 
 
 static lv_style_t style_box;
@@ -186,7 +189,7 @@ static void mode_buttons(lv_obj_t* parent)
 
 }
 
-void update_namelist(void) 
+static void update_namelist(void) 
 {
     int item = lv_roller_get_selected(roller);
     gd_get_namelist(namelist, NAMELIST_LEN);
@@ -848,37 +851,48 @@ void gui_init(gui_config_t * config)
     m_gui_callback = config->event_callback;	
 }
 
-void gui_set_bt_state(gui_bt_state_t state)
+void gui_update_namelist(void)
 {
-
+    static gui_message_t msg;
+    msg.type = GUI_MSG_UPDATE_LIST;
+    k_msgq_put(&m_gui_cmd_queue, &msg, K_NO_WAIT);
 }
 
-void gui_set_bt_led_state(bool led_is_on)
+
+static void process_cmd_msg_queue(void)
 {
-	
+    gui_message_t cmd_message;
+    while(k_msgq_get(&m_gui_cmd_queue, &cmd_message, K_NO_WAIT) == 0){
+        // Process incoming commands depending on type
+        switch(cmd_message.type){
+            case GUI_MSG_UPDATE_LIST:
+                update_namelist();
+                break;
+        }
+    }
 }
 
 
 void gui_run(void)
 {
-gd_init();
+    gd_init();
 
-	display_dev = device_get_binding(CONFIG_LVGL_DISPLAY_DEV_NAME);
+    display_dev = device_get_binding(CONFIG_LVGL_DISPLAY_DEV_NAME);
 
-	if (display_dev == NULL) {
+    if (display_dev == NULL) {
 //		LOG_ERR("Display device not found!");
-		return;
-	}
+            return;
+    }
 
-        lv_demo_widgets();
+    lv_demo_widgets();
 
-	display_blanking_off(display_dev);
+    display_blanking_off(display_dev);
 
-	while(1){
-//		process_cmd_msg_queue();
-		lv_task_handler();
-		k_sleep(K_MSEC(20));
-	}
+    while(1){
+        process_cmd_msg_queue();
+        lv_task_handler();
+        k_sleep(K_MSEC(20));
+    }
 }
 
 // Define our GUI thread, using a stack size of 4096 and a priority of 7

@@ -13,7 +13,7 @@ typedef struct
 	bool button_checked;
 } gui_event_t;
 
-typedef enum  {GUI_MSG_SET_STATE, GUI_MSG_SET_BT_STATE, GUI_MSG_SET_LED_STATE} gui_msg_type_t;
+typedef enum  {GUI_MSG_UPDATE_LIST, GUI_MSG_SET_BT_STATE, GUI_MSG_SET_LED_STATE} gui_msg_type_t;
 
 typedef struct
 {
@@ -37,7 +37,7 @@ typedef struct
 void gui_init(gui_config_t * config);
 
 void gui_update(void);
-void update_namelist(void);
+void gui_update_namelist(void);
 void gui_set_bt_state(gui_bt_state_t state);
 
 void gui_set_bt_led_state(bool led_on);
