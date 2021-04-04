@@ -17,6 +17,7 @@
 #include "model_handler.h"
 #include <bluetooth/mesh/access.h>
 #include "gus_config.h"
+#include "gus_data.h"
 
 /* Light switch behavior */
 
@@ -39,8 +40,8 @@ static struct button buttons[MAX_GUS_NODES] = {
 
 static int gus_badge_count(void)
 {
-int count = 0;
-    for (int i=0; i<10; ++i) {
+    int count = 0;
+    for (int i=0; i<MAX_GUS_NODES; ++i) {
         printk(" %d, ", buttons[i].client.pub.addr);
 
         if (buttons[i].client.pub.addr != 0) {
@@ -207,6 +208,31 @@ static const struct bt_mesh_comp comp = {
 	.elem = elements,
 	.elem_count = ARRAY_SIZE(elements),
 };
+
+void model_handler_provision(void)
+{
+    char * names[] = {
+    "Alan",
+    "Ally", 
+    "Brenda",
+    "Bryan",
+    "Carol",
+    "Craig",
+    "Dalene",
+    "Darrell",
+    "Eric"
+    };
+    // Gus provisioning isn't working yet.  This function is a placeholder. 
+    // For now it just adds an entry in the gus data for each node. 
+    gd_init();
+    int index = 0;
+    for (int i=0; i<MAX_GUS_NODES; ++i) {
+        if (buttons[i].client.pub.addr != 0) {
+            gd_add_node(index, names[index], buttons[i].client.pub.addr, index==0, false, false);
+            ++index;
+        }
+    }
+}
 
 const struct bt_mesh_comp *model_handler_init(void)
 {

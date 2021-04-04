@@ -53,7 +53,12 @@ static void bt_ready(int err)
 
 void on_gui_event(gui_event_t *event)
 {
-
+    switch(event->evt_type) {
+            case GUI_EVT_SCAN:
+                    model_handler_provision();
+                    update_namelist();  // todo handle in a message
+                    break;
+    }
 }
 
 void main(void)

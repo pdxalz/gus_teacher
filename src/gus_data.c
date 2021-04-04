@@ -75,7 +75,7 @@ void gd_init(void)
         gd_add_node(i, "", 0, false, false, false);
     }
 
-// test data
+#if 0 // test data
     gd_add_node(0, "Alan", 1, true, false, false);
     gd_add_node(1, "Ally", 2, false, true, false);
     gd_add_node(2, "Brenda", 3, false, false, true);
@@ -85,7 +85,7 @@ void gd_init(void)
     gd_add_node(6, "Dalene", 7, false, false, false);
     gd_add_node(7, "Darrell", 8, false, false, false);
     gd_add_node(8, "Eric", 9, false, false, false);
-
+#endif
 }
 
 void gd_add_node(int index, char * name, uint16_t addr, bool virus, bool mask, bool vaccine)

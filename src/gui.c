@@ -47,6 +47,8 @@ static void keyboard_create(lv_obj_t* parent);
  **********************/
 char namelist[NAMELIST_LEN];
  
+static gui_event_t m_gui_event;
+static gui_callback_t m_gui_callback = 0;
 
 
 static lv_style_t style_box;
@@ -138,7 +140,7 @@ static void update_control_visibility(void)
     lv_obj_set_hidden(cb_mask, gus_mode != mode_badge);
     lv_obj_set_hidden(cb_vaccine, gus_mode != mode_badge);
     lv_obj_set_hidden(btn_scan, gus_mode != mode_badge);
-    lv_obj_set_hidden(btn_remove, gus_mode != mode_badge);
+//    lv_obj_set_hidden(btn_remove, gus_mode != mode_badge);
 
     lv_obj_set_hidden(dd, gus_mode != mode_config);
     lv_obj_set_hidden(label_rows, gus_mode != mode_config);
@@ -184,7 +186,7 @@ static void mode_buttons(lv_obj_t* parent)
 
 }
 
-static void update_namelist(void) 
+void update_namelist(void) 
 {
     int item = lv_roller_get_selected(roller);
     gd_get_namelist(namelist, NAMELIST_LEN);
@@ -228,6 +230,16 @@ static void cb_vaccine_event_cb(lv_obj_t * obj, lv_event_t event)
     if(event == LV_EVENT_VALUE_CHANGED) {
         set_vaccine(lv_roller_get_selected(roller), lv_checkbox_is_checked(obj));
         update_namelist();
+    }    
+}
+
+static void btn_scan_event_cb(lv_obj_t * obj, lv_event_t event)
+{
+    if(obj == btn_scan && event == LV_EVENT_CLICKED) {
+        if(m_gui_callback) { 
+                m_gui_event.evt_type = GUI_EVT_SCAN;
+                m_gui_callback(&m_gui_event);
+        } 
     }    
 }
 
@@ -282,12 +294,13 @@ static void badges_create(lv_obj_t* parent)
     lv_label_set_text(label, "Scan");
     lv_obj_set_width(btn_scan, 75);
     lv_obj_set_pos(btn_scan, 110, 150 + zoff);
+    lv_obj_set_event_cb(btn_scan, btn_scan_event_cb);
 
-    btn_remove = lv_btn_create(parent, NULL);
-    label = lv_label_create(btn_remove, NULL);
-    lv_label_set_text(label, "Remove");
-    lv_obj_set_width(btn_remove, 75);
-    lv_obj_set_pos(btn_remove, 210, 150 + zoff);
+    //btn_remove = lv_btn_create(parent, NULL);
+    //label = lv_label_create(btn_remove, NULL);
+    //lv_label_set_text(label, "Remove");
+    //lv_obj_set_width(btn_remove, 75);
+    //lv_obj_set_pos(btn_remove, 210, 150 + zoff);
 }
 
 
@@ -472,19 +485,19 @@ static void kb_event_cb(lv_obj_t* _kb, lv_event_t e)
 }
 
 
-static void bar_anim(lv_task_t* t)
-{
-    static uint32_t x = 0;
-    lv_obj_t* bar = t->user_data;
+//static void bar_anim(lv_task_t* t)
+//{
+//    static uint32_t x = 0;
+//    lv_obj_t* bar = t->user_data;
 
-    static char buf[64];
-    lv_snprintf(buf, sizeof(buf), "Copying %d/%d", x, lv_bar_get_max_value(bar));
-    lv_obj_set_style_local_value_str(bar, LV_BAR_PART_BG, LV_STATE_DEFAULT, buf);
+//    static char buf[64];
+//    lv_snprintf(buf, sizeof(buf), "Copying %d/%d", x, lv_bar_get_max_value(bar));
+//    lv_obj_set_style_local_value_str(bar, LV_BAR_PART_BG, LV_STATE_DEFAULT, buf);
 
-    lv_bar_set_value(bar, x, LV_ANIM_OFF);
-    x++;
-    if (x > lv_bar_get_max_value(bar)) x = 0;
-}
+//    lv_bar_set_value(bar, x, LV_ANIM_OFF);
+//    x++;
+//    if (x > lv_bar_get_max_value(bar)) x = 0;
+//}
 
 
 static void btn_badge_event_cb(lv_obj_t* btn, lv_event_t e)
@@ -832,7 +845,7 @@ static void kb_event_cb(lv_obj_t * _kb, lv_event_t e)
 
 void gui_init(gui_config_t * config)
 {
-	
+    m_gui_callback = config->event_callback;	
 }
 
 void gui_set_bt_state(gui_bt_state_t state)
