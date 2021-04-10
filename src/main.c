@@ -10,18 +10,19 @@
 #include <stdio.h>
 #include <string.h>
 #include <zephyr.h>
-#include "gui.h"
-#include "app_ble.h"
-
-#define LOG_LEVEL CONFIG_LOG_DEFAULT_LEVEL
-#include <logging/log.h>
-LOG_MODULE_REGISTER(app);
-
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/mesh/models.h>
 #include <bluetooth/mesh/dk_prov.h>
 #include <dk_buttons_and_leds.h>
 #include "model_handler.h"
+#include "gui.h"
+#include "simulate.h"
+
+
+//#define LOG_LEVEL CONFIG_LOG_DEFAULT_LEVEL
+//#include <logging/log.h>
+//LOG_MODULE_REGISTER(app);
+
 
 static void bt_ready(int err)
 {
@@ -61,8 +62,21 @@ void on_gui_event(gui_event_t *event)
             case GUI_EVT_IDENTIFY:
                     model_handler_set_state(event->element, GUS_ST_IDENTIFY);
                     break;
+
+            case GUI_EVT_SIM_RESTART:
+            	printk("restart...\n");
+
+                    sim_msg_restart();
+                    break;
+            case GUI_EVT_SIM_STEP:
+            	printk("step...\n");
+
+                    sim_msg_next();
+                    break;
     }
 }
+
+
 
 void main(void)
 {
@@ -81,4 +95,4 @@ void main(void)
 	while (1) {
 		k_sleep(K_MSEC(1000));
 	}
-}
+} 
