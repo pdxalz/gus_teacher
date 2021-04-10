@@ -32,7 +32,7 @@ static void analysis_create(lv_obj_t* parent);
 static void slider_event_cb(lv_obj_t* slider, lv_event_t e);
 static void ta_event_cb(lv_obj_t* ta, lv_event_t e);
 static void kb_event_cb(lv_obj_t* ta, lv_event_t e);
-static void bar_anim(lv_task_t* t);
+//static void bar_anim(lv_task_t* t);
 
 static void btn_badge_event_cb(lv_obj_t* btn, lv_event_t e);
 static void btn_config_event_cb(lv_obj_t* btn, lv_event_t e);
@@ -82,7 +82,7 @@ static lv_obj_t* slider_rate;
 // analysis widgets
 // roller is shared
 static lv_obj_t* bar;
-static lv_obj_t* btn_prev;
+static lv_obj_t* btn_rew;
 static lv_obj_t* btn_play;
 static lv_obj_t* btn_next;
 
@@ -152,7 +152,7 @@ static void update_control_visibility(void)
     lv_obj_set_hidden(slider_rate, gus_mode != mode_config);
 
     lv_obj_set_hidden(bar, gus_mode != mode_analyze);
-    lv_obj_set_hidden(btn_prev, gus_mode != mode_analyze);
+    lv_obj_set_hidden(btn_rew, gus_mode != mode_analyze);
     lv_obj_set_hidden(btn_play, gus_mode != mode_analyze);
     lv_obj_set_hidden(btn_next, gus_mode != mode_analyze);
 
@@ -198,7 +198,7 @@ static void update_namelist(void)
 static void update_checkboxes(void)
 {
     int item = lv_roller_get_selected(roller);
-    lv_checkbox_set_checked(cb_virus, has_virus(item));
+    lv_checkbox_set_checked(cb_virus, is_patient_zero(item));
     lv_checkbox_set_checked(cb_mask, has_mask(item));
     lv_checkbox_set_checked(cb_vaccine, has_vaccine(item));
 }
@@ -213,7 +213,7 @@ static void roller_event_cb(lv_obj_t * obj, lv_event_t event)
 static void cb_virus_event_cb(lv_obj_t * obj, lv_event_t event)
 {
     if(event == LV_EVENT_VALUE_CHANGED) {
-        set_infected(lv_roller_get_selected(roller), lv_checkbox_is_checked(obj));
+        set_patient_zero(lv_roller_get_selected(roller), lv_checkbox_is_checked(obj));
         update_namelist();
     }    
 }
@@ -255,7 +255,19 @@ static void btn_scan_event_cb(lv_obj_t * obj, lv_event_t event)
     }   
 }
 
-
+static void btn_playback_event_cb(lv_obj_t * obj, lv_event_t event)
+{
+    if(m_gui_callback && event == LV_EVENT_CLICKED) {
+        if(obj == btn_rew) {
+                m_gui_event.evt_type = GUI_EVT_SIM_RESTART;
+        } else if(obj == btn_play) {
+                m_gui_event.evt_type = GUI_EVT_SIM_STEP;
+        } else if(obj == btn_next) {
+                m_gui_event.evt_type = GUI_EVT_SIM_STEP;
+        } 
+        m_gui_callback(&m_gui_event);
+    }   
+}
 static void badges_create(lv_obj_t* parent)
 {
     const int zoff = 30;
@@ -388,9 +400,6 @@ static void configure_create(lv_obj_t* parent)
     lv_obj_set_style_local_transition_time(slider_rate, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, 300);
     lv_obj_set_style_local_transition_prop_5(slider_rate, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, LV_STYLE_VALUE_OFS_Y);
     lv_obj_set_style_local_transition_prop_6(slider_rate, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, LV_STYLE_VALUE_OPA);
-
-
-
 }
 
 static void analysis_create(lv_obj_t* parent)
@@ -407,23 +416,26 @@ static void analysis_create(lv_obj_t* parent)
     lv_bar_set_value(bar, 30, LV_ANIM_OFF);
     lv_obj_set_pos(bar, 150, 150);
 
-    btn_prev = lv_btn_create(parent, NULL);
-    lv_obj_t* label = lv_label_create(btn_prev, NULL);
-    lv_label_set_text(label, LV_SYMBOL_PREV);
-    lv_obj_set_width(btn_prev, 50);
-    lv_obj_set_pos(btn_prev, 140, 100);
+    btn_rew = lv_btn_create(parent, NULL);
+    lv_obj_t* label = lv_label_create(btn_rew, NULL);
+    lv_label_set_text(label, LV_SYMBOL_LEFT LV_SYMBOL_LEFT);
+    lv_obj_set_width(btn_rew, 50);
+    lv_obj_set_pos(btn_rew, 140, 100);
+    lv_obj_set_event_cb(btn_rew, btn_playback_event_cb);
 
     btn_play = lv_btn_create(parent, NULL);
     label = lv_label_create(btn_play, NULL);
     lv_label_set_text(label, LV_SYMBOL_PLAY);
     lv_obj_set_width(btn_play, 50);
     lv_obj_set_pos(btn_play, 200, 100);
+    lv_obj_set_event_cb(btn_play, btn_playback_event_cb);
 
     btn_next = lv_btn_create(parent, NULL);
     label = lv_label_create(btn_next, NULL);
     lv_label_set_text(label, LV_SYMBOL_NEXT);
     lv_obj_set_width(btn_next, 50);
     lv_obj_set_pos(btn_next, 260, 100);
+    lv_obj_set_event_cb(btn_next, btn_playback_event_cb);
 }
 
 static void keyboard_create(lv_obj_t* parent)
@@ -568,6 +580,8 @@ static void process_cmd_msg_queue(void)
             case GUI_MSG_UPDATE_LIST:
                 update_namelist();
                 break;
+            default:
+                printk("m: %d\n",cmd_message.type);
         }
     }
 }

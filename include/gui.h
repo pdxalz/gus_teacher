@@ -3,7 +3,7 @@
 
 #include <zephyr.h>
 
-typedef enum {GUI_EVT_SCAN, GUI_EVT_IDENTIFY} gui_event_type_t;
+typedef enum {GUI_EVT_SCAN, GUI_EVT_IDENTIFY, GUI_EVT_SIM_RESTART, GUI_EVT_SIM_STEP} gui_event_type_t;
 
 typedef struct
 {
@@ -11,7 +11,7 @@ typedef struct
 	uint16_t element;
 } gui_event_t;
 
-typedef enum  {GUI_MSG_UPDATE_LIST, GUI_MSG_SET_BT_STATE, GUI_MSG_SET_LED_STATE} gui_msg_type_t;
+typedef enum  {GUI_MSG_UPDATE_LIST, /*GUI_MSG_SET_BT_STATE, GUI_MSG_SET_LED_STATE*/} gui_msg_type_t;
 
 typedef struct
 {
