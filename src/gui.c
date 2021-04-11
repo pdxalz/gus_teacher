@@ -132,9 +132,19 @@ void lv_demo_widgets(void)
 /**********************
  *   STATIC FUNCTIONS
  **********************/
+static uint16_t btnstate(enum gus_mode mode) 
+{
+    return gus_mode == mode ? LV_BTN_STATE_CHECKED_RELEASED : LV_BTN_STATE_RELEASED;
+}
+
 static void update_control_visibility(void)
 {
     lv_obj_set_hidden(roller, gus_mode != mode_badge && gus_mode != mode_analyze);
+
+
+    lv_btn_set_state(btn_badges, btnstate(mode_badge));
+    lv_btn_set_state(btn_config, btnstate(mode_config));
+    lv_btn_set_state(btn_analysis, btnstate(mode_analyze));
 
     lv_obj_set_hidden(btn_edit_name, gus_mode != mode_badge);
     lv_obj_set_hidden(cb_virus, gus_mode != mode_badge);
@@ -163,26 +173,36 @@ static void update_control_visibility(void)
 
 static void mode_buttons(lv_obj_t* parent)
 {
+    static lv_style_t style;
+    lv_style_init(&style);
+    lv_style_set_radius(&style, LV_STATE_DEFAULT, 5);
+
     btn_badges = lv_btn_create(parent, NULL);
     lv_obj_set_event_cb(btn_badges, btn_badge_event_cb);
     lv_obj_t* label = lv_label_create(btn_badges, NULL);
     lv_label_set_text(label, "Badges");
     lv_obj_set_width(btn_badges, 75);
-    lv_obj_set_pos(btn_badges, 90, 5);
+    lv_obj_set_pos(btn_badges, 92, 5);
+//    lv_btn_set_checkable(btn_badges, true);
+    lv_obj_add_style(btn_badges, LV_OBJ_PART_MAIN, &style);
 
     btn_config = lv_btn_create(parent, NULL);
     lv_obj_set_event_cb(btn_config, btn_config_event_cb);
     label = lv_label_create(btn_config, NULL);
     lv_label_set_text(label, "Config");
     lv_obj_set_width(btn_config, 75);
-    lv_obj_set_pos(btn_config, 165, 5);
+    lv_obj_set_pos(btn_config, 167, 5);
+//    lv_btn_set_checkable(btn_config, true);
+    lv_obj_add_style(btn_config, LV_OBJ_PART_MAIN, &style);
 
     btn_analysis = lv_btn_create(parent, NULL);
     lv_obj_set_event_cb(btn_analysis, btn_analyze_event_cb);
     label = lv_label_create(btn_analysis, NULL);
     lv_label_set_text(label, "Analysis");
     lv_obj_set_width(btn_analysis, 75);
-    lv_obj_set_pos(btn_analysis, 240, 5);
+    lv_obj_set_pos(btn_analysis, 242, 5);
+//    lv_btn_set_checkable(btn_analysis, true);
+    lv_obj_add_style(btn_analysis, LV_OBJ_PART_MAIN, &style);
 
 
 }
@@ -277,9 +297,9 @@ static void badges_create(lv_obj_t* parent)
     lv_roller_set_align(roller, LV_LABEL_ALIGN_LEFT);
     lv_obj_set_style_local_value_str(roller, LV_CONT_PART_MAIN, LV_STATE_DEFAULT, "Roller");
     lv_roller_set_auto_fit(roller, false);
-    lv_roller_set_visible_row_count(roller, 5);
-    lv_obj_set_width(roller, 80);
-    lv_obj_set_pos(roller, 10, 5);
+    lv_roller_set_visible_row_count(roller, 6);
+    lv_obj_set_width(roller, 88);
+    lv_obj_set_pos(roller, 2, 5);
     lv_obj_set_event_cb(roller, roller_event_cb);
 
 //    lv_roller_set_options(roller, "Alpha\nBravo\nCharlie\nDelta\nEcho\nZulu", LV_ROLLER_MODE_NORMAL);
@@ -331,15 +351,65 @@ static void badges_create(lv_obj_t* parent)
 
 
 
+
+
+
+//static lv_obj_t * spinbox;
+
+
+//static void lv_spinbox_increment_event_cb(lv_obj_t * btn, lv_event_t e)
+//{
+//    if(e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT) {
+//        lv_spinbox_increment(spinbox);
+//    }
+//}
+
+//static void lv_spinbox_decrement_event_cb(lv_obj_t * btn, lv_event_t e)
+//{
+//    if(e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT) {
+//        lv_spinbox_decrement(spinbox);
+//    }
+//}
+
+
+
+
+
+
+
+
+
 static void configure_create(lv_obj_t* parent)
 {
+
+    //spinbox = lv_spinbox_create(parent, NULL);
+    //lv_spinbox_set_range(spinbox, -1000, 90000);
+    //lv_spinbox_set_digit_format(spinbox, 5, 2);
+    //lv_spinbox_step_prev(spinbox);
+    //lv_obj_set_width(spinbox, 100);
+    //lv_obj_align(spinbox, NULL, LV_ALIGN_CENTER, 0, 0);
+
+    //lv_coord_t h = lv_obj_get_height(spinbox);
+    //lv_obj_t * btn = lv_btn_create(lv_scr_act(), NULL);
+    //lv_obj_set_size(btn, h, h);
+    //lv_obj_align(btn, spinbox, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
+    //lv_theme_apply(btn, LV_THEME_SPINBOX_BTN);
+    //lv_obj_set_style_local_value_str(btn, LV_BTN_PART_MAIN, LV_STATE_DEFAULT, LV_SYMBOL_PLUS);
+    //lv_obj_set_event_cb(btn, lv_spinbox_increment_event_cb);
+
+    //btn = lv_btn_create(lv_scr_act(), btn);
+    //lv_obj_align(btn, spinbox, LV_ALIGN_OUT_LEFT_MID, -5, 0);
+    //lv_obj_set_event_cb(btn, lv_spinbox_decrement_event_cb);
+    //lv_obj_set_style_local_value_str(btn, LV_BTN_PART_MAIN, LV_STATE_DEFAULT, LV_SYMBOL_MINUS);
+
+
+
+
     const int zoff = 40;
     dd = lv_dropdown_create(parent, NULL);
-    lv_obj_add_style(dd, LV_CONT_PART_MAIN, &style_box);
-    //    lv_obj_set_style_local_value_str(dd, LV_CONT_PART_MAIN, LV_STATE_DEFAULT, "Dropdown");
-    lv_obj_set_width(dd, 200);
-    lv_dropdown_set_options(dd, "Proximity\nSimulate");
-    lv_obj_set_pos(dd, 4, 35 + zoff);
+    lv_obj_set_style_local_value_str(dd, LV_CONT_PART_MAIN, LV_STATE_DEFAULT, "Dropdown");
+    lv_dropdown_set_options(dd, " Simulate\n Proximity");
+    lv_obj_set_pos(dd, 4, 20 + zoff);
 
     label_rows = lv_label_create(parent, NULL);
     lv_label_set_text(label_rows, "Rows");
