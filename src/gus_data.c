@@ -5,6 +5,7 @@
 #include "gus_data.h"
 #include "contacts.h"
 #include "sim_settings.h"
+#include "model_handler.h"
 
 #include <lvgl.h>
 
@@ -23,6 +24,23 @@ struct gus_node {
 
 struct gus_node gus_nodes[MAX_GUS_NODES];
 uint16_t node_count;
+
+
+static void update_node_health_state(uint8_t index)
+{
+    gus_state_t state = GUS_ST_HEALTHY;
+
+    if (get_infected(index)) {
+        state = GUS_ST_INFECTED;
+    } else if (has_mask(index)) {
+        state = GUS_ST_MASKED;        
+    } else if (has_vaccine(index)) {
+        state = GUS_ST_VACCINE;        
+    }
+    printk("state: %x\n", state);
+    model_handler_set_state(get_element(index), state);
+}
+
 
 bool is_patient_zero(int index) 
 {
@@ -95,6 +113,7 @@ void gd_add_exposure(int index, uint32_t exposure)
 
     if (gus_nodes[index].exposure > INFECTION_THRESHOLD) {
         set_infected(index, true);
+        update_node_health_state(index);
     }
 }
 
@@ -196,6 +215,7 @@ void reset_exposures(void)
     for (int i=0; i < gd_get_node_count(); ++i) {
         set_exposure(i, 0);
         set_infected(i, is_patient_zero(i));
+        update_node_health_state(i);
     }
 }
 

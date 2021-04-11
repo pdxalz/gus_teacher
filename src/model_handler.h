@@ -20,9 +20,10 @@ extern "C" {
 
 typedef enum gus_state {
     GUS_ST_IDENTIFY = 0x0000, 
-    GUS_ST_VIRUS = 0x2000, 
-    GUS_ST_MASKED = 0x4000, 
-    GUS_ST_VACCINE = 0x6000} gus_state_t;
+    GUS_ST_HEALTHY = 0x2000, 
+    GUS_ST_INFECTED = 0x4000,
+    GUS_ST_MASKED = 0x6000, 
+    GUS_ST_VACCINE = 0x8000} gus_state_t;
 
 const struct bt_mesh_comp *model_handler_init(void);
 void model_handler_provision(void);
