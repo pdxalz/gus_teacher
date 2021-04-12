@@ -11,20 +11,21 @@
 K_MSGQ_DEFINE(m_sim_cmd_queue, sizeof(sim_message_t), 8, 4);
 
 static uint32_t time;
+static uint8_t  rate;
 
 
 
-static void restart_sim(void)
+static void restart_sim( uint8_t rows, uint8_t space)
 {
     reset_exposures();
-    simulate_contacts();
+    simulate_contacts(rows, space);
     time = 0;
 }
 
 
 static uint32_t exposed_in_period(int index, uint16_t t0, uint16_t t1) 
 {
-printk("t= %d %d %d %d %d\n", index, t0, t1, get_start_time(index), get_end_time(index));
+//printk("t= %d %d %d %d %d\n", index, t0, t1, get_start_time(index), get_end_time(index));
     t0 = MAX(t0, get_start_time(index));
     t1 = MIN(t1, get_end_time(index));
 
@@ -50,21 +51,22 @@ static void add_exposure(int index, uint32_t exposure)
 static void calculate_exposures(uint16_t t0, uint16_t t1) 
 {
     for (uint16_t i=0; i < get_total_contacts(); ++i) {
-        uint32_t exposure = exposed_in_period(i, t0, t1);
+        uint32_t exposure = exposed_in_period(i, t0, t1) * (uint32_t)rate / 10L;
         if (exposure > 0) {
-            add_exposure(i, exposure);
+            printk("rate: %d %d\n", rate, (uint16_t)exposure);
+           add_exposure(i, exposure);
         }
     }
 }
 
 void print_infections(void) 
 {
-printk("\n-->");
+//printk("\n-->");
     for (int i=0; i<gd_get_node_count(); ++i) {
         if (get_infected(i)) {
             printk(" %s,", get_name(i));
         }
-        printk("exp: %d %6d\n", i, get_exposure(i));
+//        printk("exp: %d %6d\n", i, get_exposure(i));
     }
 }
 
@@ -77,10 +79,14 @@ printk("time %d dur %d\n", time, DURATION);
     time += DURATION;    
 }
 
-void sim_msg_restart(void)
+void sim_msg_restart(uint8_t rows, uint8_t space, uint8_t rate)
 {
     static sim_message_t msg;
     msg.type = SIM_MSG_RESTART;
+    msg.params.rows = rows;
+    msg.params.space = space;
+    msg.params.rate = rate;
+
     k_msgq_put(&m_sim_cmd_queue, &msg, K_NO_WAIT);
 }
 
@@ -92,14 +98,18 @@ void sim_msg_next(void)
 }
 
 
-static void process_cmd_msg_queue(void)
+static void process_sim_msg_queue(void)
 {
-    sim_message_t cmd_message;
-    while(k_msgq_get(&m_sim_cmd_queue, &cmd_message, K_NO_WAIT) == 0){
+    sim_message_t sim_message;
+    while(k_msgq_get(&m_sim_cmd_queue, &sim_message, K_NO_WAIT) == 0){
         // Process incoming commands depending on type
-        switch(cmd_message.type){
+        switch(sim_message.type){
             case SIM_MSG_RESTART:
-                restart_sim();
+//            printk("time %d dur %d\n", time, DURATION);
+            printk("rsr... %d %d %d", sim_message.params.rows, sim_message.params.space, sim_message.params.rate);
+
+                restart_sim(sim_message.params.rows, sim_message.params.space);
+                rate = sim_message.params.rate;
                 break;
             case SIM_MSG_NEXT:
                 next_analysis_point();
@@ -113,7 +123,7 @@ static void sim_run(void)
 {
 
 	while(1){
-		process_cmd_msg_queue();
+		process_sim_msg_queue();
 		k_sleep(K_MSEC(20));
 	}
 }

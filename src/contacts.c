@@ -7,12 +7,12 @@
 #include "gus_config.h"
 
 #define MAX_CONTACTS 5000
-const uint8_t rows = 1;
-const uint8_t desk_spacing = 4*12;
+//const uint8_t rows = 1;
+//const uint8_t desk_spacing = 4*12;
 
 
 const uint8_t safe_distance = 100;
-const uint16_t duration = (1*60);  //todo 
+const uint16_t duration = (1*60*10);  //todo 
 
 struct contact {
     uint8_t     badgeA;
@@ -70,20 +70,21 @@ void add_contact(uint16_t badgeA, uint16_t badgeB, uint32_t start_time, uint32_t
     total_contacts++;
 }
 
-static uint8_t calc_distance(int badgeA, int badgeB)
+static uint8_t calc_distance(int badgeA, int badgeB, uint8_t rows, uint8_t space)
 {
     double distance;
 
     double x = (double)(badgeA % rows) - (double)(badgeB % rows);
     double y = (double)(badgeA / rows) - (double)(badgeB / rows);
-    distance = desk_spacing * sqrt(x*x +y*y);
+    distance = space * 12.0 * sqrt(x*x +y*y);
+//    printk("s=%d, d=%d\n", space, (uint8_t)distance);
     if (distance > 254)
         return 255;
     return (uint8_t) distance;
 }
 
 // create contacts for non-proximity simulation
-void simulate_contacts(void)
+void simulate_contacts(uint8_t rows, uint8_t space)
 {
     total_contacts = 0;
     uint16_t time = 0;
@@ -95,10 +96,10 @@ void simulate_contacts(void)
             for (uint8_t badgeB=0; badgeB<gd_get_node_count(); ++badgeB) {
                 if (badgeA==badgeB) continue;
             
-                distance = calc_distance(badgeA,badgeB);
-      printk("dist %d %d %d\n", badgeA, badgeB, distance);
+                distance = calc_distance(badgeA, badgeB, rows, space);
+ //     printk("dist %d %d %d\n", badgeA, badgeB, distance);
                 if (distance < safe_distance) {
-                    add_contact(badgeA,badgeB, time, time+duration, distance);
+                    add_contact(badgeA, badgeB, time, time+duration, distance);
                 }
             }
         }

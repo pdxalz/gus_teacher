@@ -7,6 +7,7 @@
 #include <string.h>
 #include "gus_config.h"
 #include "gus_data.h"
+#include "simulate.h"
 
 const struct device *display_dev;
 
@@ -132,8 +133,6 @@ void lv_demo_widgets(void)
     keyboard_create(lv_scr_act());
 
     gus_mode = mode_badge;
-    //gus_mode = mode_config;
-    //gus_mode = mode_analyze;
     update_control_visibility();
 
 
@@ -298,13 +297,16 @@ static void btn_playback_event_cb(lv_obj_t * obj, lv_event_t event)
 {
     if(m_gui_callback && event == LV_EVENT_CLICKED) {
         if(obj == btn_rew) {
-                m_gui_event.evt_type = GUI_EVT_SIM_RESTART;
+            uint8_t rows = lv_spinbox_get_value(spinbox_rows);
+            uint8_t space = lv_spinbox_get_value(spinbox_space);
+            uint8_t rate = lv_spinbox_get_value(spinbox_rate);
+            printk("rsr %d %d %d", rows, space, rate);
+            sim_msg_restart(rows, space, rate);
         } else if(obj == btn_play) {
-                m_gui_event.evt_type = GUI_EVT_SIM_STEP;
+            sim_msg_next();
         } else if(obj == btn_next) {
-                m_gui_event.evt_type = GUI_EVT_SIM_STEP;
+            sim_msg_next();
         } 
-        m_gui_callback(&m_gui_event);
     }   
 }
 static void badges_create(lv_obj_t* parent)
@@ -330,8 +332,6 @@ static void badges_create(lv_obj_t* parent)
     lv_obj_set_width(btn_edit_name, 100);
     lv_obj_set_height(btn_edit_name, 30);
     lv_obj_set_pos(btn_edit_name, 200, 40 + zoff);
-
-
 
     cb_virus = lv_checkbox_create(parent, NULL);
     lv_obj_add_style(cb_virus, LV_CONT_PART_MAIN, &style_box);
@@ -365,13 +365,6 @@ static void badges_create(lv_obj_t* parent)
     lv_obj_set_pos(btn_id, 210, 150 + zoff);
     lv_obj_set_event_cb(btn_id, btn_scan_event_cb);
 }
-
-
-
-
-
-
-
 
 
 static void lv_spinbox_rows_increment_event_cb(lv_obj_t * btn, lv_event_t e)
@@ -417,13 +410,6 @@ static void lv_spinbox_rate_decrement_event_cb(lv_obj_t * btn, lv_event_t e)
 }
 
 
-
-
-
-
-
-
-
 static void configure_create(lv_obj_t* parent)
 {
     const int zoff = 40;
@@ -444,7 +430,6 @@ static void configure_create(lv_obj_t* parent)
     lv_spinbox_set_range(spinbox_rows, 1, 10);
     lv_spinbox_set_digit_format(spinbox_rows, 1, 0);
     lv_spinbox_set_value(spinbox_rows, 3);
-//    lv_spinbox_step_prev(spinbox_rows);
     lv_obj_set_width(spinbox_rows, 50);
     lv_obj_set_pos(spinbox_rows, 150, 64 + zoff);
 
@@ -474,7 +459,6 @@ static void configure_create(lv_obj_t* parent)
     lv_spinbox_set_range(spinbox_space, 1, 10);
     lv_spinbox_set_digit_format(spinbox_space, 1, 0);
     lv_spinbox_set_value(spinbox_space, 4);
-//    lv_spinbox_step_prev(spinbox_space);
     lv_obj_set_width(spinbox_space, 50);
     lv_obj_set_pos(spinbox_space, 150, 100 + zoff);
 
@@ -505,7 +489,6 @@ static void configure_create(lv_obj_t* parent)
     lv_spinbox_set_range(spinbox_rate, 5, 50);
     lv_spinbox_set_digit_format(spinbox_rate, 2, 1);
     lv_spinbox_set_value(spinbox_rate, 12);
-//    lv_spinbox_step_prev(spinbox_rate);
     lv_obj_set_width(spinbox_rate, 50);
     lv_obj_set_pos(spinbox_rate, 150, 140 + zoff);
 
@@ -525,11 +508,6 @@ static void configure_create(lv_obj_t* parent)
     label = lv_label_create(btn_rate_down, NULL);
     lv_label_set_text(label, LV_SYMBOL_MINUS);
     lv_obj_set_event_cb(btn_rate_down, lv_spinbox_rate_decrement_event_cb);
-
-
-
-
-
 }
 
 static void analysis_create(lv_obj_t* parent)
