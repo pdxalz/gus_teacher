@@ -69,25 +69,6 @@ void print_infections(void)
 
 
 
-static void next_analysis_point(void)
-{
-printk("time %d dur %d\n", time, step_interval);
-    calculate_exposures(time, time + step_interval, true);
-    print_infections();
-    time += step_interval;    
-}
-
-void sim_msg_restart(uint8_t rows, uint8_t space, uint8_t rate)
-{
-    static sim_message_t msg;
-    msg.type = SIM_MSG_RESTART;
-    msg.params.rows = rows;
-    msg.params.space = space;
-    msg.params.rate = rate;
-
-    k_msgq_put(&m_sim_cmd_queue, &msg, K_NO_WAIT);
-}
-
 static void calc_time_to_complete(void)
 {
     uint16_t time=0;
@@ -108,8 +89,31 @@ static void restart_sim( uint8_t rows, uint8_t space)
     calc_time_to_complete();
     reset_exposures(true);
     time = 0;
+    gui_update_progress(0);
 }
 
+static void next_analysis_point(void)
+{
+printk("time %d dur %d\n", time, step_interval);
+    calculate_exposures(time, time + step_interval, true);
+    print_infections();
+    time += step_interval;   
+    
+    uint8_t progress = MIN(100, time * 100 / time_to_complete);
+    gui_update_progress(progress);
+}
+
+
+void sim_msg_restart(uint8_t rows, uint8_t space, uint8_t rate)
+{
+    static sim_message_t msg;
+    msg.type = SIM_MSG_RESTART;
+    msg.params.rows = rows;
+    msg.params.space = space;
+    msg.params.rate = rate;
+
+    k_msgq_put(&m_sim_cmd_queue, &msg, K_NO_WAIT);
+}
 
 void sim_msg_next(void)
 {

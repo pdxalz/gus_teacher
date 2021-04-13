@@ -108,6 +108,25 @@ enum gus_mode { mode_badge, mode_config, mode_analyze, mode_edit_name} gus_mode;
 /**********************
  *      MACROS
  **********************/
+#define PLAY_TIMER_VALUE K_SECONDS(2)
+
+extern void play_expiry_function(struct k_timer *timer_id);
+
+K_TIMER_DEFINE(play_timer, play_expiry_function, NULL);
+
+void play_expiry_function(struct k_timer *timer_id)
+{
+    if (lv_bar_get_value(bar) < 100) {
+        sim_msg_next();
+        k_timer_start(&play_timer, PLAY_TIMER_VALUE, K_NO_WAIT );
+    }
+}
+
+
+
+
+
+
 
  /**********************
   *   GLOBAL FUNCTIONS
@@ -309,6 +328,7 @@ static void btn_playback_event_cb(lv_obj_t * obj, lv_event_t event)
             restart_simulation();
         } else if(obj == btn_play) {
             sim_msg_next();
+            k_timer_start(&play_timer, PLAY_TIMER_VALUE, K_NO_WAIT );
         } else if(obj == btn_next) {
             sim_msg_next();
         } 
@@ -518,6 +538,9 @@ static void configure_create(lv_obj_t* parent)
 static void analysis_create(lv_obj_t* parent)
 {
     // roller is shared and not created here
+    static lv_style_t style;
+    lv_style_init(&style);
+    
 
     bar = lv_bar_create(parent, NULL);
     lv_obj_set_width(bar, 150);
@@ -525,8 +548,10 @@ static void analysis_create(lv_obj_t* parent)
     lv_obj_set_style_local_value_align(bar, LV_BAR_PART_BG, LV_STATE_DEFAULT, LV_ALIGN_OUT_BOTTOM_MID);
     lv_obj_set_style_local_value_ofs_y(bar, LV_BAR_PART_BG, LV_STATE_DEFAULT, LV_DPI / 20);
     lv_obj_set_style_local_margin_bottom(bar, LV_BAR_PART_BG, LV_STATE_DEFAULT, LV_DPI / 7);
+
+    lv_obj_set_style_local_bg_color(bar, LV_BAR_PART_BG, LV_STATE_DEFAULT, LV_COLOR_MAKE(0x40, 0x40, 0x40));
     lv_obj_align(bar, NULL, LV_ALIGN_CENTER, 0, 0);
-    lv_bar_set_value(bar, 30, LV_ANIM_OFF);
+    lv_bar_set_value(bar, 100, LV_ANIM_OFF);
     lv_obj_set_pos(bar, 150, 150);
 
     btn_rew = lv_btn_create(parent, NULL);
@@ -668,6 +693,16 @@ void gui_update_namelist(void)
     k_msgq_put(&m_gui_cmd_queue, &msg, K_NO_WAIT);
 }
 
+void gui_update_progress(uint8_t progress)
+{
+    static gui_message_t msg;
+    msg.type = GUI_MSG_PROGRESS;
+    msg.params.progress = progress;
+    printk("progress %d\n", progress);
+
+    k_msgq_put(&m_gui_cmd_queue, &msg, K_NO_WAIT);
+}
+
 
 static void process_cmd_msg_queue(void)
 {
@@ -677,6 +712,9 @@ static void process_cmd_msg_queue(void)
         switch(cmd_message.type){
             case GUI_MSG_UPDATE_LIST:
                 update_namelist();
+                break;
+            case GUI_MSG_PROGRESS:
+                lv_bar_set_value(bar, cmd_message.params.progress , LV_ANIM_OFF);
                 break;
             default:
                 printk("m: %d\n",cmd_message.type);
