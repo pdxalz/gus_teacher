@@ -23,8 +23,9 @@ bool get_infected(int index);
 void set_infected(int index, bool infected);
 uint32_t get_exposure(int index);
 void set_exposure(int index, uint32_t exposure);
-void gd_add_exposure(int index, uint32_t exposure);
+void gd_add_exposure(int index, uint32_t exposure, bool update);
 char * get_name(int index);
-void reset_exposures(void);
+void reset_exposures(bool update);
+bool everyone_infected(void);
 
 #endif  //__GUS_DATA_H

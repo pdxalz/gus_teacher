@@ -293,15 +293,20 @@ static void btn_scan_event_cb(lv_obj_t * obj, lv_event_t event)
     }   
 }
 
-static void btn_playback_event_cb(lv_obj_t * obj, lv_event_t event)
+static void restart_simulation(void) 
 {
-    if(m_gui_callback && event == LV_EVENT_CLICKED) {
-        if(obj == btn_rew) {
             uint8_t rows = lv_spinbox_get_value(spinbox_rows);
             uint8_t space = lv_spinbox_get_value(spinbox_space);
             uint8_t rate = lv_spinbox_get_value(spinbox_rate);
             printk("rsr %d %d %d", rows, space, rate);
             sim_msg_restart(rows, space, rate);
+}
+
+static void btn_playback_event_cb(lv_obj_t * obj, lv_event_t event)
+{
+    if(m_gui_callback && event == LV_EVENT_CLICKED) {
+        if(obj == btn_rew) {
+            restart_simulation();
         } else if(obj == btn_play) {
             sim_msg_next();
         } else if(obj == btn_next) {
@@ -632,6 +637,7 @@ static void btn_config_event_cb(lv_obj_t* btn, lv_event_t e)
 static void btn_analyze_event_cb(lv_obj_t* btn, lv_event_t e)
 {
     gus_mode = mode_analyze;
+    restart_simulation();
     update_control_visibility();
 }
 

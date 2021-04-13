@@ -7,20 +7,15 @@
 #include "gus_config.h"
 #include "gus_data.h"
 
+
 // Create a message queue for handling external GUI commands
 K_MSGQ_DEFINE(m_sim_cmd_queue, sizeof(sim_message_t), 8, 4);
 
-static uint32_t time;
+const int step_interval = 60;  // 1 minute intervals
+static uint16_t time;
 static uint8_t  rate;
-
-
-
-static void restart_sim( uint8_t rows, uint8_t space)
-{
-    reset_exposures();
-    simulate_contacts(rows, space);
-    time = 0;
-}
+static uint16_t time_of_last_exposure;
+static uint16_t time_to_complete;
 
 
 static uint32_t exposed_in_period(int index, uint16_t t0, uint16_t t1) 
@@ -33,28 +28,30 @@ static uint32_t exposed_in_period(int index, uint16_t t0, uint16_t t1)
 }
 
 
-static void add_exposure(int index, uint32_t exposure)
+static void add_exposure(int index, uint32_t exposure, bool update)
 {
     int badgeA = get_contact_badgeA(index);
     int badgeB = get_contact_badgeB(index);
 
     // if either but not both infected, add the exposure to the non-infected
     if (!get_infected(badgeA) && get_infected(badgeB)) {
-        gd_add_exposure(badgeA, exposure);
+        gd_add_exposure(badgeA, exposure, update);
     }
     else if (get_infected(badgeA) && !get_infected(badgeB)) {
-        gd_add_exposure(badgeB, exposure);
+        gd_add_exposure(badgeB, exposure, update);
     }
 }
 
 
-static void calculate_exposures(uint16_t t0, uint16_t t1) 
+static void calculate_exposures(uint16_t t0, uint16_t t1, bool update) 
 {
+    time_of_last_exposure = 0;
     for (uint16_t i=0; i < get_total_contacts(); ++i) {
         uint32_t exposure = exposed_in_period(i, t0, t1) * (uint32_t)rate / 10L;
         if (exposure > 0) {
-            printk("rate: %d %d\n", rate, (uint16_t)exposure);
-           add_exposure(i, exposure);
+//            printk("rate: %d %d\n", rate, (uint16_t)exposure);
+           add_exposure(i, exposure, update);
+           time_of_last_exposure = t1;
         }
     }
 }
@@ -71,12 +68,13 @@ void print_infections(void)
 }
 
 
+
 static void next_analysis_point(void)
 {
-printk("time %d dur %d\n", time, DURATION);
-    calculate_exposures(time, time + DURATION);
+printk("time %d dur %d\n", time, step_interval);
+    calculate_exposures(time, time + step_interval, true);
     print_infections();
-    time += DURATION;    
+    time += step_interval;    
 }
 
 void sim_msg_restart(uint8_t rows, uint8_t space, uint8_t rate)
@@ -89,6 +87,29 @@ void sim_msg_restart(uint8_t rows, uint8_t space, uint8_t rate)
 
     k_msgq_put(&m_sim_cmd_queue, &msg, K_NO_WAIT);
 }
+
+static void calc_time_to_complete(void)
+{
+    uint16_t time=0;
+    reset_exposures(false);
+    
+    while (time < final_time() && !everyone_infected()) {     
+        calculate_exposures(time, time + step_interval, false);
+         time += step_interval;
+    }
+    time_to_complete = time;
+    printk("complete %d %d\n", time_to_complete, everyone_infected());
+
+}
+
+static void restart_sim( uint8_t rows, uint8_t space)
+{
+    simulate_contacts(rows, space);
+    calc_time_to_complete();
+    reset_exposures(true);
+    time = 0;
+}
+
 
 void sim_msg_next(void)
 {
@@ -105,7 +126,7 @@ static void process_sim_msg_queue(void)
         // Process incoming commands depending on type
         switch(sim_message.type){
             case SIM_MSG_RESTART:
-//            printk("time %d dur %d\n", time, DURATION);
+//            printk("time %d dur %d\n", time, step_interval);
             printk("rsr... %d %d %d", sim_message.params.rows, sim_message.params.space, sim_message.params.rate);
 
                 restart_sim(sim_message.params.rows, sim_message.params.space);

@@ -12,7 +12,7 @@
 
 
 const uint8_t safe_distance = 100;
-const uint16_t duration = (1*60*10);  //todo 
+const uint16_t create_interval = (1*60*10);  //todo 
 
 struct contact {
     uint8_t     badgeA;
@@ -22,12 +22,13 @@ struct contact {
     uint8_t     distance;
 };
 
-static uint16_t total_contacts;
+static uint16_t _final_time;
+static uint16_t _total_contacts;
 static struct contact contact_list[MAX_CONTACTS];
 
 uint16_t get_total_contacts(void) 
 {
-    return total_contacts;
+    return _total_contacts;
 }
 
 uint16_t get_start_time(int index)
@@ -56,18 +57,23 @@ uint8_t get_contact_badgeB(int index)
     return contact_list[index].badgeB;
 }
 
+uint16_t final_time(void)
+{
+    return _final_time;
+}
+
 void add_contact(uint16_t badgeA, uint16_t badgeB, uint32_t start_time, uint32_t end_time, double distance)
 {
-    __ASSERT(total_contacts < MAX_CONTACTS, ERR_BAD_PARAM);
+    __ASSERT(_total_contacts < MAX_CONTACTS, ERR_BAD_PARAM);
 
-    contact_list[total_contacts].badgeA = badgeA;
-    contact_list[total_contacts].badgeB = badgeB;
-    contact_list[total_contacts].start_time = start_time;
-    contact_list[total_contacts].end_time = end_time;
+    contact_list[_total_contacts].badgeA = badgeA;
+    contact_list[_total_contacts].badgeB = badgeB;
+    contact_list[_total_contacts].start_time = start_time;
+    contact_list[_total_contacts].end_time = end_time;
 
     __ASSERT(distance != 0, ERR_BAD_PARAM);
-    contact_list[total_contacts].distance = distance;
-    total_contacts++;
+    contact_list[_total_contacts].distance = distance;
+    _total_contacts++;
 }
 
 static uint8_t calc_distance(int badgeA, int badgeB, uint8_t rows, uint8_t space)
@@ -86,7 +92,7 @@ static uint8_t calc_distance(int badgeA, int badgeB, uint8_t rows, uint8_t space
 // create contacts for non-proximity simulation
 void simulate_contacts(uint8_t rows, uint8_t space)
 {
-    total_contacts = 0;
+    _total_contacts = 0;
     uint16_t time = 0;
     uint8_t distance;
     uint8_t node_count = gd_get_node_count();
@@ -99,11 +105,14 @@ void simulate_contacts(uint8_t rows, uint8_t space)
                 distance = calc_distance(badgeA, badgeB, rows, space);
  //     printk("dist %d %d %d\n", badgeA, badgeB, distance);
                 if (distance < safe_distance) {
-                    add_contact(badgeA, badgeB, time, time+duration, distance);
+                    add_contact(badgeA, badgeB, time, time+create_interval, distance);
                 }
             }
         }
-        time += duration;
+        time += create_interval;
     }
+    _final_time = time;
 }
+
+
 

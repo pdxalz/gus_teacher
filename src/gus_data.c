@@ -104,7 +104,7 @@ void set_exposure(int index, uint32_t exposure)
 }
 
 
-void gd_add_exposure(int index, uint32_t exposure)
+void gd_add_exposure(int index, uint32_t exposure, bool update)
 {
     __ASSERT_NO_MSG(index < MAX_GUS_NODES);
     gus_nodes[index].exposure +=  exposure;
@@ -113,7 +113,9 @@ void gd_add_exposure(int index, uint32_t exposure)
 
     if (gus_nodes[index].exposure > INFECTION_THRESHOLD) {
         set_infected(index, true);
-        update_node_health_state(index);
+        if (update) {
+            update_node_health_state(index);
+        }
     }
 }
 
@@ -181,6 +183,15 @@ char * get_name(int index)
     return gus_nodes[index].name;
 }
 
+bool everyone_infected(void) {
+    for (int i=0; i<node_count; ++i) {
+        if (!gus_nodes[i].infected) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // fills buf with list of names separated by '\n'
 void gd_get_namelist(char * buf, int length)
 {
@@ -210,12 +221,14 @@ uint16_t gd_get_node_count(void)
     return node_count;
 }
 
-void reset_exposures(void)
+void reset_exposures(bool update)
 {
     for (int i=0; i < gd_get_node_count(); ++i) {
         set_exposure(i, 0);
         set_infected(i, is_patient_zero(i));
-        update_node_health_state(i);
+        if (update) {
+            update_node_health_state(i);
+        }
     }
 }
 
