@@ -37,7 +37,6 @@ static void update_node_health_state(uint8_t index)
     } else if (has_vaccine(index)) {
         state = GUS_ST_VACCINE;        
     }
-//    printk("state: %x\n", state);
     model_handler_set_state(get_element(index), state);
 }
 
@@ -108,8 +107,6 @@ void gd_add_exposure(int index, uint32_t exposure, bool update)
 {
     __ASSERT_NO_MSG(index < MAX_GUS_NODES);
     gus_nodes[index].exposure +=  exposure;
-
-//    printk("add ex %d, %d %d\n", index, exposure, gus_nodes[index].exposure);
 
     if (gus_nodes[index].exposure > INFECTION_THRESHOLD) {
         set_infected(index, true);

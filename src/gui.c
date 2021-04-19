@@ -30,7 +30,6 @@ static void mode_buttons(lv_obj_t* parent);
 static void badges_create(lv_obj_t* parent);
 static void configure_create(lv_obj_t* parent);
 static void analysis_create(lv_obj_t* parent);
-static void slider_event_cb(lv_obj_t* slider, lv_event_t e);
 static void ta_event_cb(lv_obj_t* ta, lv_event_t e);
 static void kb_event_cb(lv_obj_t* ta, lv_event_t e);
 //static void bar_anim(lv_task_t* t);
@@ -454,7 +453,7 @@ static void configure_create(lv_obj_t* parent)
     spinbox_rows = lv_spinbox_create(parent, NULL);
     lv_spinbox_set_range(spinbox_rows, 1, 10);
     lv_spinbox_set_digit_format(spinbox_rows, 1, 0);
-    lv_spinbox_set_value(spinbox_rows, 3);
+    lv_spinbox_set_value(spinbox_rows, 1);
     lv_obj_set_width(spinbox_rows, 50);
     lv_obj_set_pos(spinbox_rows, 150, 64 + zoff);
 
@@ -630,21 +629,6 @@ static void kb_event_cb(lv_obj_t* _kb, lv_event_t e)
         }
     }
 }
-
-
-//static void bar_anim(lv_task_t* t)
-//{
-//    static uint32_t x = 0;
-//    lv_obj_t* bar = t->user_data;
-
-//    static char buf[64];
-//    lv_snprintf(buf, sizeof(buf), "Copying %d/%d", x, lv_bar_get_max_value(bar));
-//    lv_obj_set_style_local_value_str(bar, LV_BAR_PART_BG, LV_STATE_DEFAULT, buf);
-
-//    lv_bar_set_value(bar, x, LV_ANIM_OFF);
-//    x++;
-//    if (x > lv_bar_get_max_value(bar)) x = 0;
-//}
 
 
 static void btn_badge_event_cb(lv_obj_t* btn, lv_event_t e)

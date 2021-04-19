@@ -61,8 +61,9 @@ static void status_handler(struct bt_mesh_lvl_cli *cli,
 	int index = button - &buttons[0];
 
 	button->status = status->current;
-	dk_set_led(index, status->current);
-
+        if (index < 4) {
+            dk_set_led(index, status->current);
+        }
 	printk("Button %d: Received response: %s\n", index + 1,
 	       status->current ? "on" : "off");
 }
@@ -99,7 +100,9 @@ static void button_handler_cb(uint32_t pressed, uint32_t changed)
 				 * unacked message. Set the state immediately.
 				 */
 				buttons[i].status = set.lvl;
-				dk_set_led(i, set.lvl);
+                                if (i<4) {
+                                    dk_set_led(i, set.lvl);
+                                }
 			}
 		}
 
