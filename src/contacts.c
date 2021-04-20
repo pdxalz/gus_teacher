@@ -6,7 +6,7 @@
 #include "gus_data.h"
 #include "gus_config.h"
 
-#define MAX_CONTACTS 8000
+#define MAX_CONTACTS 5000
 //const uint8_t rows = 1;
 //const uint8_t desk_spacing = 4*12;
 

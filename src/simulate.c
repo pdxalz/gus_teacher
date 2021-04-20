@@ -27,7 +27,10 @@ static uint32_t exposed_in_period(int index, uint16_t t0, uint16_t t1)
     return (t0 < t1 ) ? (t1-t0) * 1000 / get_distance_squared(index) : 0;
 }
 
-
+// Adds to the exposure of a healthy badge if they are exposed to the infection.
+// Also, the exposure is reduce by 1/3 if the healthy badge wears a mask,
+// by 1/10 if the infected badge has a mask, and by 1/50 if the healthy badge
+// has been vaccinated.
 static void add_exposure(int index, uint32_t exposure, bool update)
 {
     int badgeA = get_contact_badgeA(index);
@@ -35,9 +38,15 @@ static void add_exposure(int index, uint32_t exposure, bool update)
 
     // if either but not both infected, add the exposure to the non-infected
     if (!get_infected(badgeA) && get_infected(badgeB)) {
+        exposure /= (has_mask(badgeA) ? 3 : 1);
+        exposure /= (has_mask(badgeB) ? 10 : 1);
+        exposure /= (has_vaccine(badgeA) ? 50 : 1);
         gd_add_exposure(badgeA, exposure, update);
     }
     else if (get_infected(badgeA) && !get_infected(badgeB)) {
+        exposure /= (has_mask(badgeB) ? 2 : 1);
+        exposure /= (has_mask(badgeA) ? 10 : 1);
+        exposure /= (has_vaccine(badgeB) ? 50 : 1);
         gd_add_exposure(badgeB, exposure, update);
     }
 }
@@ -80,6 +89,7 @@ static void calc_time_to_complete(void)
 
 static void restart_sim( uint8_t rows, uint8_t space)
 {
+printk("restart\n");
     simulate_contacts(rows, space);
     calc_time_to_complete();
     reset_exposures(true);
@@ -93,6 +103,7 @@ static void next_analysis_point(void)
     print_infections();
     time += step_interval;   
     
+    printk("exposure: %d %d %d %d \n", time, get_exposure(1), get_exposure(2), get_exposure(3));
     uint8_t progress = MIN(100, time * 100 / time_to_complete);
     gui_update_progress(progress);
 }
