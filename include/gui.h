@@ -3,15 +3,15 @@
 
 #include <zephyr.h>
 
-typedef enum {GUI_EVT_SCAN, GUI_EVT_IDENTIFY, GUI_EVT_SIM_RESTART, GUI_EVT_SIM_STEP} gui_event_type_t;
+typedef enum {GUI_EVT_SCAN, GUI_EVT_IDENTIFY} gui_event_type_t;
 
 typedef struct
 {
 	gui_event_type_t evt_type;
-	uint16_t element;
+	uint8_t element;
 } gui_event_t;
 
-typedef enum  {GUI_MSG_UPDATE_LIST, /*GUI_MSG_SET_BT_STATE, GUI_MSG_SET_LED_STATE*/} gui_msg_type_t;
+typedef enum  {GUI_MSG_UPDATE_LIST, GUI_MSG_PROGRESS} gui_msg_type_t;
 
 typedef struct
 {
@@ -20,7 +20,7 @@ typedef struct
 	union 
 	{
 		uint16_t param;
-		bool led_state;
+		uint8_t progress;
 	} params;
 } gui_message_t;
 
@@ -36,5 +36,6 @@ void gui_init(gui_config_t * config);
 
 void gui_update(void);
 void gui_update_namelist(void);
+void gui_update_progress(uint8_t progress);
 
 #endif

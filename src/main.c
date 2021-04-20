@@ -62,17 +62,6 @@ void on_gui_event(gui_event_t *event)
             case GUI_EVT_IDENTIFY:
                     model_handler_set_state(event->element, GUS_ST_IDENTIFY);
                     break;
-
-            case GUI_EVT_SIM_RESTART:
-            	printk("restart...\n");
-
-                    sim_msg_restart();
-                    break;
-            case GUI_EVT_SIM_STEP:
-            	printk("step...\n");
-
-                    sim_msg_next();
-                    break;
     }
 }
 

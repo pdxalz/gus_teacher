@@ -9,13 +9,14 @@ typedef struct
 {
 	sim_msg_type_t type;
 	void *p_data;
-	union 
+	struct // union 
 	{
-		uint16_t param;
-		bool led_state;
+		uint8_t rows;
+		uint8_t space;
+                uint8_t rate;
 	} params;
 } sim_message_t;
 
-void sim_msg_restart(void);
+void sim_msg_restart(uint8_t rows, uint8_t space, uint8_t rate);
 void sim_msg_next(void);
 #endif  //__SIMULATE_H

@@ -7,6 +7,7 @@
 #include <string.h>
 #include "gus_config.h"
 #include "gus_data.h"
+#include "simulate.h"
 
 const struct device *display_dev;
 
@@ -29,7 +30,6 @@ static void mode_buttons(lv_obj_t* parent);
 static void badges_create(lv_obj_t* parent);
 static void configure_create(lv_obj_t* parent);
 static void analysis_create(lv_obj_t* parent);
-static void slider_event_cb(lv_obj_t* slider, lv_event_t e);
 static void ta_event_cb(lv_obj_t* ta, lv_event_t e);
 static void kb_event_cb(lv_obj_t* ta, lv_event_t e);
 //static void bar_anim(lv_task_t* t);
@@ -73,11 +73,22 @@ static lv_obj_t* btn_id;
 // config widgets
 static lv_obj_t* dd;
 static lv_obj_t* label_rows;
-static lv_obj_t* slider_rows;
+static lv_obj_t * spinbox_rows;
+static lv_obj_t * btn_row_up;
+static lv_obj_t * btn_row_down;
+static lv_obj_t * spinbox_space;
+static lv_obj_t * btn_space_up;
+static lv_obj_t * btn_space_down;
+static lv_obj_t * spinbox_rate;
+static lv_obj_t * btn_rate_up;
+static lv_obj_t * btn_rate_down;
+
+
+//static lv_obj_t* slider_rows;
 static lv_obj_t* label_space;
-static lv_obj_t* slider_space;
+//static lv_obj_t* slider_space;
 static lv_obj_t* label_rate;
-static lv_obj_t* slider_rate;
+//static lv_obj_t* slider_rate;
 
 // analysis widgets
 // roller is shared
@@ -96,6 +107,25 @@ enum gus_mode { mode_badge, mode_config, mode_analyze, mode_edit_name} gus_mode;
 /**********************
  *      MACROS
  **********************/
+#define PLAY_TIMER_VALUE K_SECONDS(2)
+
+extern void play_expiry_function(struct k_timer *timer_id);
+
+K_TIMER_DEFINE(play_timer, play_expiry_function, NULL);
+
+void play_expiry_function(struct k_timer *timer_id)
+{
+    if (lv_bar_get_value(bar) < 100) {
+        sim_msg_next();
+        k_timer_start(&play_timer, PLAY_TIMER_VALUE, K_NO_WAIT );
+    }
+}
+
+
+
+
+
+
 
  /**********************
   *   GLOBAL FUNCTIONS
@@ -121,8 +151,6 @@ void lv_demo_widgets(void)
     keyboard_create(lv_scr_act());
 
     gus_mode = mode_badge;
-    //gus_mode = mode_config;
-    //gus_mode = mode_analyze;
     update_control_visibility();
 
 
@@ -132,9 +160,19 @@ void lv_demo_widgets(void)
 /**********************
  *   STATIC FUNCTIONS
  **********************/
+static uint16_t btnstate(enum gus_mode mode) 
+{
+    return gus_mode == mode ? LV_BTN_STATE_CHECKED_RELEASED : LV_BTN_STATE_RELEASED;
+}
+
 static void update_control_visibility(void)
 {
     lv_obj_set_hidden(roller, gus_mode != mode_badge && gus_mode != mode_analyze);
+
+
+    lv_btn_set_state(btn_badges, btnstate(mode_badge));
+    lv_btn_set_state(btn_config, btnstate(mode_config));
+    lv_btn_set_state(btn_analysis, btnstate(mode_analyze));
 
     lv_obj_set_hidden(btn_edit_name, gus_mode != mode_badge);
     lv_obj_set_hidden(cb_virus, gus_mode != mode_badge);
@@ -144,12 +182,23 @@ static void update_control_visibility(void)
     lv_obj_set_hidden(btn_id, gus_mode != mode_badge);
 
     lv_obj_set_hidden(dd, gus_mode != mode_config);
+
     lv_obj_set_hidden(label_rows, gus_mode != mode_config);
-    lv_obj_set_hidden(slider_rows, gus_mode != mode_config);
+    lv_obj_set_hidden(spinbox_rows, gus_mode != mode_config);
+    lv_obj_set_hidden(btn_row_up, gus_mode != mode_config);
+    lv_obj_set_hidden(btn_row_down, gus_mode != mode_config);
+
     lv_obj_set_hidden(label_space, gus_mode != mode_config);
-    lv_obj_set_hidden(slider_space, gus_mode != mode_config);
+    lv_obj_set_hidden(spinbox_space, gus_mode != mode_config);
+    lv_obj_set_hidden(btn_space_up, gus_mode != mode_config);
+    lv_obj_set_hidden(btn_space_down, gus_mode != mode_config);
+
     lv_obj_set_hidden(label_rate, gus_mode != mode_config);
-    lv_obj_set_hidden(slider_rate, gus_mode != mode_config);
+    lv_obj_set_hidden(spinbox_rate, gus_mode != mode_config);
+    lv_obj_set_hidden(btn_rate_up, gus_mode != mode_config);
+    lv_obj_set_hidden(btn_rate_down, gus_mode != mode_config);
+
+    lv_obj_set_hidden(label_rate, gus_mode != mode_config);
 
     lv_obj_set_hidden(bar, gus_mode != mode_analyze);
     lv_obj_set_hidden(btn_rew, gus_mode != mode_analyze);
@@ -163,26 +212,33 @@ static void update_control_visibility(void)
 
 static void mode_buttons(lv_obj_t* parent)
 {
+    static lv_style_t style;
+    lv_style_init(&style);
+    lv_style_set_radius(&style, LV_STATE_DEFAULT, 5);
+
     btn_badges = lv_btn_create(parent, NULL);
     lv_obj_set_event_cb(btn_badges, btn_badge_event_cb);
     lv_obj_t* label = lv_label_create(btn_badges, NULL);
     lv_label_set_text(label, "Badges");
     lv_obj_set_width(btn_badges, 75);
-    lv_obj_set_pos(btn_badges, 90, 5);
+    lv_obj_set_pos(btn_badges, 92, 5);
+    lv_obj_add_style(btn_badges, LV_OBJ_PART_MAIN, &style);
 
     btn_config = lv_btn_create(parent, NULL);
     lv_obj_set_event_cb(btn_config, btn_config_event_cb);
     label = lv_label_create(btn_config, NULL);
     lv_label_set_text(label, "Config");
     lv_obj_set_width(btn_config, 75);
-    lv_obj_set_pos(btn_config, 165, 5);
+    lv_obj_set_pos(btn_config, 167, 5);
+    lv_obj_add_style(btn_config, LV_OBJ_PART_MAIN, &style);
 
     btn_analysis = lv_btn_create(parent, NULL);
     lv_obj_set_event_cb(btn_analysis, btn_analyze_event_cb);
     label = lv_label_create(btn_analysis, NULL);
     lv_label_set_text(label, "Analysis");
     lv_obj_set_width(btn_analysis, 75);
-    lv_obj_set_pos(btn_analysis, 240, 5);
+    lv_obj_set_pos(btn_analysis, 242, 5);
+    lv_obj_add_style(btn_analysis, LV_OBJ_PART_MAIN, &style);
 
 
 }
@@ -255,17 +311,26 @@ static void btn_scan_event_cb(lv_obj_t * obj, lv_event_t event)
     }   
 }
 
+static void restart_simulation(void) 
+{
+            uint8_t rows = lv_spinbox_get_value(spinbox_rows);
+            uint8_t space = lv_spinbox_get_value(spinbox_space);
+            uint8_t rate = lv_spinbox_get_value(spinbox_rate);
+            printk("rsr %d %d %d", rows, space, rate);
+            sim_msg_restart(rows, space, rate);
+}
+
 static void btn_playback_event_cb(lv_obj_t * obj, lv_event_t event)
 {
     if(m_gui_callback && event == LV_EVENT_CLICKED) {
         if(obj == btn_rew) {
-                m_gui_event.evt_type = GUI_EVT_SIM_RESTART;
+            restart_simulation();
         } else if(obj == btn_play) {
-                m_gui_event.evt_type = GUI_EVT_SIM_STEP;
+            sim_msg_next();
+            k_timer_start(&play_timer, PLAY_TIMER_VALUE, K_NO_WAIT );
         } else if(obj == btn_next) {
-                m_gui_event.evt_type = GUI_EVT_SIM_STEP;
+            sim_msg_next();
         } 
-        m_gui_callback(&m_gui_event);
     }   
 }
 static void badges_create(lv_obj_t* parent)
@@ -277,12 +342,11 @@ static void badges_create(lv_obj_t* parent)
     lv_roller_set_align(roller, LV_LABEL_ALIGN_LEFT);
     lv_obj_set_style_local_value_str(roller, LV_CONT_PART_MAIN, LV_STATE_DEFAULT, "Roller");
     lv_roller_set_auto_fit(roller, false);
-    lv_roller_set_visible_row_count(roller, 5);
-    lv_obj_set_width(roller, 80);
-    lv_obj_set_pos(roller, 10, 5);
+    lv_roller_set_visible_row_count(roller, 6);
+    lv_obj_set_width(roller, 88);
+    lv_obj_set_pos(roller, 2, 5);
     lv_obj_set_event_cb(roller, roller_event_cb);
 
-//    lv_roller_set_options(roller, "Alpha\nBravo\nCharlie\nDelta\nEcho\nZulu", LV_ROLLER_MODE_NORMAL);
     update_namelist();
 
     btn_edit_name = lv_btn_create(parent, NULL);
@@ -292,8 +356,6 @@ static void badges_create(lv_obj_t* parent)
     lv_obj_set_width(btn_edit_name, 100);
     lv_obj_set_height(btn_edit_name, 30);
     lv_obj_set_pos(btn_edit_name, 200, 40 + zoff);
-
-
 
     cb_virus = lv_checkbox_create(parent, NULL);
     lv_obj_add_style(cb_virus, LV_CONT_PART_MAIN, &style_box);
@@ -329,82 +391,155 @@ static void badges_create(lv_obj_t* parent)
 }
 
 
+static void lv_spinbox_rows_increment_event_cb(lv_obj_t * btn, lv_event_t e)
+{
+    if(e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT) {
+        lv_spinbox_increment(spinbox_rows);
+    }
+}
+
+static void lv_spinbox_rows_decrement_event_cb(lv_obj_t * btn, lv_event_t e)
+{
+    if(e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT) {
+        lv_spinbox_decrement(spinbox_rows);
+    }
+}
+
+static void lv_spinbox_space_increment_event_cb(lv_obj_t * btn, lv_event_t e)
+{
+    if(e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT) {
+        lv_spinbox_increment(spinbox_space);
+    }
+}
+
+static void lv_spinbox_space_decrement_event_cb(lv_obj_t * btn, lv_event_t e)
+{
+    if(e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT) {
+        lv_spinbox_decrement(spinbox_space);
+    }
+}
+
+static void lv_spinbox_rate_increment_event_cb(lv_obj_t * btn, lv_event_t e)
+{
+    if(e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT) {
+        lv_spinbox_increment(spinbox_rate);
+    }
+}
+
+static void lv_spinbox_rate_decrement_event_cb(lv_obj_t * btn, lv_event_t e)
+{
+    if(e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT) {
+        lv_spinbox_decrement(spinbox_rate);
+    }
+}
 
 
 static void configure_create(lv_obj_t* parent)
 {
     const int zoff = 40;
-    dd = lv_dropdown_create(parent, NULL);
-    lv_obj_add_style(dd, LV_CONT_PART_MAIN, &style_box);
-    //    lv_obj_set_style_local_value_str(dd, LV_CONT_PART_MAIN, LV_STATE_DEFAULT, "Dropdown");
-    lv_obj_set_width(dd, 200);
-    lv_dropdown_set_options(dd, "Proximity\nSimulate");
-    lv_obj_set_pos(dd, 4, 35 + zoff);
+    lv_obj_t* label;
+    lv_coord_t h;
 
+    dd = lv_dropdown_create(parent, NULL);
+    lv_obj_set_style_local_value_str(dd, LV_CONT_PART_MAIN, LV_STATE_DEFAULT, "Dropdown");
+    lv_dropdown_set_options(dd, " Simulate\n Proximity");
+    lv_obj_set_pos(dd, 110, 20 + zoff);
+
+    // rows spinner
     label_rows = lv_label_create(parent, NULL);
     lv_label_set_text(label_rows, "Rows");
     lv_obj_set_pos(label_rows, 4, 70 + zoff);
 
-    slider_rows = lv_slider_create(parent, NULL);
-    lv_slider_set_value(slider_rows, 40, LV_ANIM_OFF);
-    lv_obj_set_event_cb(slider_rows, slider_event_cb);
-    lv_obj_set_pos(slider_rows, 55, 75 + zoff);
+    spinbox_rows = lv_spinbox_create(parent, NULL);
+    lv_spinbox_set_range(spinbox_rows, 1, 10);
+    lv_spinbox_set_digit_format(spinbox_rows, 1, 0);
+    lv_spinbox_set_value(spinbox_rows, 1);
+    lv_obj_set_width(spinbox_rows, 50);
+    lv_obj_set_pos(spinbox_rows, 150, 64 + zoff);
 
+    h = lv_obj_get_height(spinbox_rows);
+    btn_row_up = lv_btn_create(parent, NULL);
+    lv_obj_set_size(btn_row_up, h+12, h);
+    lv_obj_align(btn_row_up, spinbox_rows, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
+    lv_theme_apply(btn_row_up, LV_THEME_SPINBOX_BTN);
+    label = lv_label_create(btn_row_up, NULL);
+    lv_label_set_text(label, LV_SYMBOL_PLUS);
+    lv_obj_set_event_cb(btn_row_up, lv_spinbox_rows_increment_event_cb);
 
-    /*Use the knobs style value the display the current value in focused state*/
-    lv_obj_set_style_local_margin_top(slider_rows, LV_SLIDER_PART_BG, LV_STATE_DEFAULT, LV_DPX(25));
-    lv_obj_set_style_local_value_font(slider_rows, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, lv_theme_get_font_small());
-    lv_obj_set_style_local_value_ofs_y(slider_rows, LV_SLIDER_PART_KNOB, LV_STATE_FOCUSED, -LV_DPX(25));
-    lv_obj_set_style_local_value_opa(slider_rows, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, LV_OPA_TRANSP);
-    lv_obj_set_style_local_value_opa(slider_rows, LV_SLIDER_PART_KNOB, LV_STATE_FOCUSED, LV_OPA_COVER);
-    lv_obj_set_style_local_transition_time(slider_rows, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, 300);
-    lv_obj_set_style_local_transition_prop_5(slider_rows, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, LV_STYLE_VALUE_OFS_Y);
-    lv_obj_set_style_local_transition_prop_6(slider_rows, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, LV_STYLE_VALUE_OPA);
+    btn_row_down = lv_btn_create(parent, NULL);
+    lv_obj_set_size(btn_row_down, h+12, h);
+    lv_obj_align(btn_row_down, spinbox_rows, LV_ALIGN_OUT_LEFT_MID, -5, 0);
+    lv_theme_apply(btn_row_down, LV_THEME_SPINBOX_BTN);
+    label = lv_label_create(btn_row_down, NULL);
+    lv_label_set_text(label, LV_SYMBOL_MINUS);
+    lv_obj_set_event_cb(btn_row_down, lv_spinbox_rows_decrement_event_cb);
 
+    // space spinner
     label_space = lv_label_create(parent, NULL);
     lv_label_set_text(label_space, "Space");
     lv_obj_set_pos(label_space, 4, 110 + zoff);
 
-    slider_space = lv_slider_create(parent, NULL);
-    lv_slider_set_value(slider_space, 40, LV_ANIM_OFF);
-    lv_obj_set_event_cb(slider_space, slider_event_cb);
-    lv_obj_set_pos(slider_space, 55, 115 + zoff);
+    spinbox_space = lv_spinbox_create(parent, NULL);
+    lv_spinbox_set_range(spinbox_space, 1, 10);
+    lv_spinbox_set_digit_format(spinbox_space, 1, 0);
+    lv_spinbox_set_value(spinbox_space, 4);
+    lv_obj_set_width(spinbox_space, 50);
+    lv_obj_set_pos(spinbox_space, 150, 100 + zoff);
+
+    h = lv_obj_get_height(spinbox_space);
+    btn_space_up = lv_btn_create(parent, NULL);
+    lv_obj_set_size(btn_space_up, h+12, h);
+    lv_obj_align(btn_space_up, spinbox_space, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
+    lv_theme_apply(btn_space_up, LV_THEME_SPINBOX_BTN);
+    label = lv_label_create(btn_space_up, NULL);
+    lv_label_set_text(label, LV_SYMBOL_PLUS);
+    lv_obj_set_event_cb(btn_space_up, lv_spinbox_space_increment_event_cb);
+
+    btn_space_down = lv_btn_create(parent, NULL);
+    lv_obj_set_size(btn_space_down, h+12, h);
+    lv_obj_align(btn_space_down, spinbox_space, LV_ALIGN_OUT_LEFT_MID, -5, 0);
+    lv_theme_apply(btn_space_down, LV_THEME_SPINBOX_BTN);
+    label = lv_label_create(btn_space_down, NULL);
+    lv_label_set_text(label, LV_SYMBOL_MINUS);
+    lv_obj_set_event_cb(btn_space_down, lv_spinbox_space_decrement_event_cb);
 
 
-    /*Use the knobs style value the display the current value in focused state*/
-    lv_obj_set_style_local_margin_top(slider_space, LV_SLIDER_PART_BG, LV_STATE_DEFAULT, LV_DPX(25));
-    lv_obj_set_style_local_value_font(slider_space, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, lv_theme_get_font_small());
-    lv_obj_set_style_local_value_ofs_y(slider_space, LV_SLIDER_PART_KNOB, LV_STATE_FOCUSED, -LV_DPX(25));
-    lv_obj_set_style_local_value_opa(slider_space, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, LV_OPA_TRANSP);
-    lv_obj_set_style_local_value_opa(slider_space, LV_SLIDER_PART_KNOB, LV_STATE_FOCUSED, LV_OPA_COVER);
-    lv_obj_set_style_local_transition_time(slider_space, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, 300);
-    lv_obj_set_style_local_transition_prop_5(slider_space, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, LV_STYLE_VALUE_OFS_Y);
-    lv_obj_set_style_local_transition_prop_6(slider_space, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, LV_STYLE_VALUE_OPA);
-
+    // rate spinner
     label_rate = lv_label_create(parent, NULL);
     lv_label_set_text(label_rate, "Rate");
     lv_obj_set_pos(label_rate, 4, 150 + zoff);
 
-    slider_rate = lv_slider_create(parent, NULL);
-    lv_slider_set_value(slider_rate, 40, LV_ANIM_OFF);
-    lv_obj_set_event_cb(slider_rate, slider_event_cb);
-    lv_obj_set_pos(slider_rate, 55, 155 + zoff);
+    spinbox_rate = lv_spinbox_create(parent, NULL);
+    lv_spinbox_set_range(spinbox_rate, 5, 50);
+    lv_spinbox_set_digit_format(spinbox_rate, 2, 1);
+    lv_spinbox_set_value(spinbox_rate, 12);
+    lv_obj_set_width(spinbox_rate, 50);
+    lv_obj_set_pos(spinbox_rate, 150, 140 + zoff);
 
+    h = lv_obj_get_height(spinbox_rate);
+    btn_rate_up = lv_btn_create(parent, NULL);
+    lv_obj_set_size(btn_rate_up, h+12, h);
+    lv_obj_align(btn_rate_up, spinbox_rate, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
+    lv_theme_apply(btn_rate_up, LV_THEME_SPINBOX_BTN);
+    label = lv_label_create(btn_rate_up, NULL);
+    lv_label_set_text(label, LV_SYMBOL_PLUS);
+    lv_obj_set_event_cb(btn_rate_up, lv_spinbox_rate_increment_event_cb);
 
-    /*Use the knobs style value the display the current value in focused state*/
-    lv_obj_set_style_local_margin_top(slider_rate, LV_SLIDER_PART_BG, LV_STATE_DEFAULT, LV_DPX(25));
-    lv_obj_set_style_local_value_font(slider_rate, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, lv_theme_get_font_small());
-    lv_obj_set_style_local_value_ofs_y(slider_rate, LV_SLIDER_PART_KNOB, LV_STATE_FOCUSED, -LV_DPX(25));
-    lv_obj_set_style_local_value_opa(slider_rate, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, LV_OPA_TRANSP);
-    lv_obj_set_style_local_value_opa(slider_rate, LV_SLIDER_PART_KNOB, LV_STATE_FOCUSED, LV_OPA_COVER);
-    lv_obj_set_style_local_transition_time(slider_rate, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, 300);
-    lv_obj_set_style_local_transition_prop_5(slider_rate, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, LV_STYLE_VALUE_OFS_Y);
-    lv_obj_set_style_local_transition_prop_6(slider_rate, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, LV_STYLE_VALUE_OPA);
+    btn_rate_down = lv_btn_create(parent, NULL);
+    lv_obj_set_size(btn_rate_down, h+12, h);
+    lv_obj_align(btn_rate_down, spinbox_rate, LV_ALIGN_OUT_LEFT_MID, -5, 0);
+    lv_theme_apply(btn_rate_down, LV_THEME_SPINBOX_BTN);
+    label = lv_label_create(btn_rate_down, NULL);
+    lv_label_set_text(label, LV_SYMBOL_MINUS);
+    lv_obj_set_event_cb(btn_rate_down, lv_spinbox_rate_decrement_event_cb);
 }
 
 static void analysis_create(lv_obj_t* parent)
 {
     // roller is shared and not created here
+    static lv_style_t style;
+    lv_style_init(&style);
+    
 
     bar = lv_bar_create(parent, NULL);
     lv_obj_set_width(bar, 150);
@@ -412,8 +547,10 @@ static void analysis_create(lv_obj_t* parent)
     lv_obj_set_style_local_value_align(bar, LV_BAR_PART_BG, LV_STATE_DEFAULT, LV_ALIGN_OUT_BOTTOM_MID);
     lv_obj_set_style_local_value_ofs_y(bar, LV_BAR_PART_BG, LV_STATE_DEFAULT, LV_DPI / 20);
     lv_obj_set_style_local_margin_bottom(bar, LV_BAR_PART_BG, LV_STATE_DEFAULT, LV_DPI / 7);
+
+    lv_obj_set_style_local_bg_color(bar, LV_BAR_PART_BG, LV_STATE_DEFAULT, LV_COLOR_MAKE(0x40, 0x40, 0x40));
     lv_obj_align(bar, NULL, LV_ALIGN_CENTER, 0, 0);
-    lv_bar_set_value(bar, 30, LV_ANIM_OFF);
+    lv_bar_set_value(bar, 100, LV_ANIM_OFF);
     lv_obj_set_pos(bar, 150, 150);
 
     btn_rew = lv_btn_create(parent, NULL);
@@ -468,23 +605,7 @@ static void keyboard_create(lv_obj_t* parent)
 }
 
 
-static void slider_event_cb(lv_obj_t* slider, lv_event_t e)
-{
-    if (e == LV_EVENT_VALUE_CHANGED) {
-        if (lv_slider_get_type(slider) == LV_SLIDER_TYPE_NORMAL) {
-            static char buf[16];
-            lv_snprintf(buf, sizeof(buf), "%d", lv_slider_get_value(slider));
-            lv_obj_set_style_local_value_str(slider, LV_SLIDER_PART_KNOB, LV_STATE_DEFAULT, buf);
-        }
-        else {
-            static char buf[32];
-            lv_snprintf(buf, sizeof(buf), "%d-%d", lv_slider_get_left_value(slider), lv_slider_get_value(slider));
-            lv_obj_set_style_local_value_str(slider, LV_SLIDER_PART_INDIC, LV_STATE_DEFAULT, buf);
-        }
 
-    }
-
-}
 
 static void ta_event_cb(lv_obj_t* ta, lv_event_t e)
 {
@@ -510,21 +631,6 @@ static void kb_event_cb(lv_obj_t* _kb, lv_event_t e)
 }
 
 
-//static void bar_anim(lv_task_t* t)
-//{
-//    static uint32_t x = 0;
-//    lv_obj_t* bar = t->user_data;
-
-//    static char buf[64];
-//    lv_snprintf(buf, sizeof(buf), "Copying %d/%d", x, lv_bar_get_max_value(bar));
-//    lv_obj_set_style_local_value_str(bar, LV_BAR_PART_BG, LV_STATE_DEFAULT, buf);
-
-//    lv_bar_set_value(bar, x, LV_ANIM_OFF);
-//    x++;
-//    if (x > lv_bar_get_max_value(bar)) x = 0;
-//}
-
-
 static void btn_badge_event_cb(lv_obj_t* btn, lv_event_t e)
 {
     gus_mode = mode_badge;
@@ -540,6 +646,7 @@ static void btn_config_event_cb(lv_obj_t* btn, lv_event_t e)
 static void btn_analyze_event_cb(lv_obj_t* btn, lv_event_t e)
 {
     gus_mode = mode_analyze;
+    restart_simulation();
     update_control_visibility();
 }
 
@@ -570,6 +677,16 @@ void gui_update_namelist(void)
     k_msgq_put(&m_gui_cmd_queue, &msg, K_NO_WAIT);
 }
 
+void gui_update_progress(uint8_t progress)
+{
+    static gui_message_t msg;
+    msg.type = GUI_MSG_PROGRESS;
+    msg.params.progress = progress;
+    printk("progress %d\n", progress);
+
+    k_msgq_put(&m_gui_cmd_queue, &msg, K_NO_WAIT);
+}
+
 
 static void process_cmd_msg_queue(void)
 {
@@ -579,6 +696,9 @@ static void process_cmd_msg_queue(void)
         switch(cmd_message.type){
             case GUI_MSG_UPDATE_LIST:
                 update_namelist();
+                break;
+            case GUI_MSG_PROGRESS:
+                lv_bar_set_value(bar, cmd_message.params.progress , LV_ANIM_OFF);
                 break;
             default:
                 printk("m: %d\n",cmd_message.type);
