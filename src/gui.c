@@ -454,6 +454,7 @@ static void configure_create(lv_obj_t* parent)
     lv_obj_set_pos(label_rows, 4, 70 + zoff);
 
     spinbox_rows = lv_spinbox_create(parent, NULL);
+    lv_textarea_set_cursor_blink_time(spinbox_rows, 0);
     lv_spinbox_set_range(spinbox_rows, 1, 10);
     lv_spinbox_set_digit_format(spinbox_rows, 1, 0);
     lv_spinbox_set_value(spinbox_rows, 1);
@@ -483,6 +484,7 @@ static void configure_create(lv_obj_t* parent)
     lv_obj_set_pos(label_space, 4, 110 + zoff);
 
     spinbox_space = lv_spinbox_create(parent, NULL);
+    lv_textarea_set_cursor_blink_time(spinbox_space, 0);
     lv_spinbox_set_range(spinbox_space, 1, 10);
     lv_spinbox_set_digit_format(spinbox_space, 1, 0);
     lv_spinbox_set_value(spinbox_space, 4);
@@ -513,6 +515,7 @@ static void configure_create(lv_obj_t* parent)
     lv_obj_set_pos(label_rate, 4, 150 + zoff);
 
     spinbox_rate = lv_spinbox_create(parent, NULL);
+    lv_textarea_set_cursor_blink_time(spinbox_rate, 0);
     lv_spinbox_set_range(spinbox_rate, 5, 50);
     lv_spinbox_set_digit_format(spinbox_rate, 2, 1);
     lv_spinbox_set_value(spinbox_rate, 12);
