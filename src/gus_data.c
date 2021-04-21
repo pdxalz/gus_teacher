@@ -180,6 +180,13 @@ char * get_name(int index)
     return gus_nodes[index].name;
 }
 
+void set_name(int index, const char * name)
+{
+    __ASSERT_NO_MSG(index < MAX_GUS_NODES);
+     strncpy(gus_nodes[index].name, name, MAX_NAME_LENGTH);
+}
+
+
 bool everyone_infected(void) {
     for (int i=0; i<node_count; ++i) {
         if (!gus_nodes[i].infected) {

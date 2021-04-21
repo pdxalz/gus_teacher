@@ -243,20 +243,22 @@ static void mode_buttons(lv_obj_t* parent)
 
 }
 
+void update_checkboxes(void)
+{
+    int item = lv_roller_get_selected(roller);
+    if (item >= 0) {
+        lv_checkbox_set_checked(cb_virus, is_patient_zero(item));
+        lv_checkbox_set_checked(cb_mask, has_mask(item));
+        lv_checkbox_set_checked(cb_vaccine, has_vaccine(item));
+    }
+}
+
 static void update_namelist(void) 
 {
     int item = lv_roller_get_selected(roller);
     gd_get_namelist(namelist, NAMELIST_LEN);
     lv_roller_set_options(roller, namelist, LV_ROLLER_MODE_NORMAL);
     lv_roller_set_selected(roller, item, LV_ANIM_OFF);
-}
-
-static void update_checkboxes(void)
-{
-    int item = lv_roller_get_selected(roller);
-    lv_checkbox_set_checked(cb_virus, is_patient_zero(item));
-    lv_checkbox_set_checked(cb_mask, has_mask(item));
-    lv_checkbox_set_checked(cb_vaccine, has_vaccine(item));
 }
 
 static void roller_event_cb(lv_obj_t * obj, lv_event_t event)
@@ -579,6 +581,7 @@ static void keyboard_create(lv_obj_t* parent)
 {
 
     ta = lv_textarea_create(parent, NULL);
+    lv_textarea_set_text_align(ta, LV_LABEL_ALIGN_CENTER);
     lv_obj_add_style(ta, LV_CONT_PART_MAIN, &style_box);
 
     lv_textarea_set_one_line(ta, true);
@@ -586,7 +589,9 @@ static void keyboard_create(lv_obj_t* parent)
     lv_textarea_set_placeholder_text(ta, "Name");
     lv_obj_set_event_cb(ta, ta_event_cb);
     lv_obj_set_width(ta, 180);
-    lv_obj_set_pos(ta, 110, 60);
+    lv_obj_set_height(ta, 30);
+    lv_obj_set_pos(ta, 70, 60);
+
 
     if (kb == NULL) {
         lv_coord_t kb_height = LV_MATH_MIN(LV_VER_RES / 2, LV_DPI * 4 / 3);
@@ -627,6 +632,17 @@ static void kb_event_cb(lv_obj_t* _kb, lv_event_t e)
             gus_mode = mode_badge;
             update_control_visibility();
         }
+    } else if (e == LV_EVENT_APPLY) {
+        if (kb) {
+            const char * name = lv_textarea_get_text(ta);
+            printk("name: %s\n",name);
+            int item = lv_roller_get_selected(roller);
+            set_name(item, name);
+            update_namelist();
+
+            gus_mode = mode_badge;
+            update_control_visibility();
+        }        
     }
 }
 

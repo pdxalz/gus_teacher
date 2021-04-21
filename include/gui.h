@@ -36,6 +36,7 @@ void gui_init(gui_config_t * config);
 
 void gui_update(void);
 void gui_update_namelist(void);
+void update_checkboxes(void);
 void gui_update_progress(uint8_t progress);
 
 #endif
