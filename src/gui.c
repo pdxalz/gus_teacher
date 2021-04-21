@@ -89,13 +89,13 @@ static lv_obj_t* label_space;
 //static lv_obj_t* slider_space;
 static lv_obj_t* label_rate;
 //static lv_obj_t* slider_rate;
-
 // analysis widgets
 // roller is shared
 static lv_obj_t* bar;
 static lv_obj_t* btn_rew;
 static lv_obj_t* btn_play;
 static lv_obj_t* btn_next;
+static lv_obj_t* label_progress;
 
 // keyboard widgets
 static lv_obj_t* ta;
@@ -204,6 +204,7 @@ static void update_control_visibility(void)
     lv_obj_set_hidden(btn_rew, gus_mode != mode_analyze);
     lv_obj_set_hidden(btn_play, gus_mode != mode_analyze);
     lv_obj_set_hidden(btn_next, gus_mode != mode_analyze);
+    lv_obj_set_hidden(label_progress, gus_mode != mode_analyze);
 
     lv_obj_set_hidden(kb, gus_mode != mode_edit_name);
     lv_obj_set_hidden(ta, gus_mode != mode_edit_name);
@@ -553,28 +554,32 @@ static void analysis_create(lv_obj_t* parent)
     lv_obj_set_style_local_bg_color(bar, LV_BAR_PART_BG, LV_STATE_DEFAULT, LV_COLOR_MAKE(0x40, 0x40, 0x40));
     lv_obj_align(bar, NULL, LV_ALIGN_CENTER, 0, 0);
     lv_bar_set_value(bar, 100, LV_ANIM_OFF);
-    lv_obj_set_pos(bar, 150, 150);
+    lv_obj_set_pos(bar, 140, 150);
 
     btn_rew = lv_btn_create(parent, NULL);
     lv_obj_t* label = lv_label_create(btn_rew, NULL);
     lv_label_set_text(label, LV_SYMBOL_LEFT LV_SYMBOL_LEFT);
     lv_obj_set_width(btn_rew, 50);
-    lv_obj_set_pos(btn_rew, 140, 100);
+    lv_obj_set_pos(btn_rew, 130, 100);
     lv_obj_set_event_cb(btn_rew, btn_playback_event_cb);
 
     btn_play = lv_btn_create(parent, NULL);
     label = lv_label_create(btn_play, NULL);
     lv_label_set_text(label, LV_SYMBOL_PLAY);
     lv_obj_set_width(btn_play, 50);
-    lv_obj_set_pos(btn_play, 200, 100);
+    lv_obj_set_pos(btn_play, 190, 100);
     lv_obj_set_event_cb(btn_play, btn_playback_event_cb);
 
     btn_next = lv_btn_create(parent, NULL);
     label = lv_label_create(btn_next, NULL);
     lv_label_set_text(label, LV_SYMBOL_NEXT);
     lv_obj_set_width(btn_next, 50);
-    lv_obj_set_pos(btn_next, 260, 100);
+    lv_obj_set_pos(btn_next, 250, 100);
     lv_obj_set_event_cb(btn_next, btn_playback_event_cb);
+
+    label_progress = lv_label_create(parent, NULL);
+    lv_label_set_text(label_progress, "0");
+    lv_obj_set_pos(label_progress, 170, 180);
 }
 
 static void keyboard_create(lv_obj_t* parent)
@@ -693,11 +698,12 @@ void gui_update_namelist(void)
     k_msgq_put(&m_gui_cmd_queue, &msg, K_NO_WAIT);
 }
 
-void gui_update_progress(uint8_t progress)
+void gui_update_progress(uint8_t progress, uint16_t time)
 {
     static gui_message_t msg;
     msg.type = GUI_MSG_PROGRESS;
     msg.params.progress = progress;
+    msg.params.param = time;
     printk("progress %d\n", progress);
 
     k_msgq_put(&m_gui_cmd_queue, &msg, K_NO_WAIT);
@@ -706,6 +712,7 @@ void gui_update_progress(uint8_t progress)
 
 static void process_cmd_msg_queue(void)
 {
+    char buf[20];
     gui_message_t cmd_message;
     while(k_msgq_get(&m_gui_cmd_queue, &cmd_message, K_NO_WAIT) == 0){
         // Process incoming commands depending on type
@@ -713,9 +720,13 @@ static void process_cmd_msg_queue(void)
             case GUI_MSG_UPDATE_LIST:
                 update_namelist();
                 break;
+
             case GUI_MSG_PROGRESS:
                 lv_bar_set_value(bar, cmd_message.params.progress , LV_ANIM_OFF);
+                sprintf(buf, "time: %d", cmd_message.params.param);
+                lv_label_set_text(label_progress, buf);
                 break;
+
             default:
                 printk("m: %d\n",cmd_message.type);
         }

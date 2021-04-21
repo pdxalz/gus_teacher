@@ -17,7 +17,7 @@ typedef struct
 {
 	gui_msg_type_t type;
 	void *p_data;
-	union 
+	struct 
 	{
 		uint16_t param;
 		uint8_t progress;
@@ -37,6 +37,6 @@ void gui_init(gui_config_t * config);
 void gui_update(void);
 void gui_update_namelist(void);
 void update_checkboxes(void);
-void gui_update_progress(uint8_t progress);
+void gui_update_progress(uint8_t progress, uint16_t time);
 
 #endif

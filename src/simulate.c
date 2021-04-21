@@ -94,7 +94,7 @@ printk("restart\n");
     calc_time_to_complete();
     reset_exposures(true);
     time = 0;
-    gui_update_progress(0);
+    gui_update_progress(0, 0);
 }
 
 static void next_analysis_point(void)
@@ -105,7 +105,7 @@ static void next_analysis_point(void)
     
     printk("exposure: %d %d %d %d \n", time, get_exposure(1), get_exposure(2), get_exposure(3));
     uint8_t progress = MIN(100, time * 100 / time_to_complete);
-    gui_update_progress(progress);
+    gui_update_progress(progress, time);
 }
 
 
