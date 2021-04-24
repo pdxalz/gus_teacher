@@ -319,7 +319,7 @@ static void restart_simulation(void)
             uint8_t rows = lv_spinbox_get_value(spinbox_rows);
             uint8_t space = lv_spinbox_get_value(spinbox_space);
             uint8_t rate = lv_spinbox_get_value(spinbox_rate);
-            printk("rsr %d %d %d", rows, space, rate);
+//            printk("rsr %d %d %d", rows, space, rate);
             sim_msg_restart(rows, space, rate);
 }
 
