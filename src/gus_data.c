@@ -28,14 +28,14 @@ uint16_t node_count;
 
 static void update_node_health_state(uint8_t index)
 {
-    gus_state_t state = GUS_ST_HEALTHY;
+    enum bt_mesh_gus_cli_state state = BT_MESH_GUS_CLI_HEALTHY;
 
     if (get_infected(index)) {
-        state = GUS_ST_INFECTED;
+        state = BT_MESH_GUS_CLI_INFECTED;
     } else if (has_mask(index)) {
-        state = GUS_ST_MASKED;        
+        state = BT_MESH_GUS_CLI_MASKED;        
     } else if (has_vaccine(index)) {
-        state = GUS_ST_VACCINE;        
+        state = BT_MESH_GUS_CLI_VACCINATED;        
     }
     model_handler_set_state(get_element(index), state);
 }
