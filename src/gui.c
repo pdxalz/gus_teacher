@@ -8,6 +8,7 @@
 #include "gus_config.h"
 #include "gus_data.h"
 #include "simulate.h"
+#include "model_handler.h"
 
 const struct device *display_dev;
 
@@ -646,6 +647,7 @@ static void kb_event_cb(lv_obj_t* _kb, lv_event_t e)
             printk("name: %s\n",name);
             int item = lv_roller_get_selected(roller);
             set_name(item, name);
+            model_set_name(get_element(item), name);
             update_namelist();
 
             gus_mode = mode_badge;

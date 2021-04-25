@@ -111,6 +111,7 @@ static void handle_set_name(struct bt_mesh_model *model,
 
 	msg = extract_name(buf);
 
+        strncpy(gus->name, msg, GUS_NAME_LEN);
 	if (gus->handlers->set_name) {
 		gus->handlers->set_name(gus, ctx, msg);
 	}

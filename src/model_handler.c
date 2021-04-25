@@ -215,31 +215,16 @@ void model_scan_for_badges(void)
 void model_handler_provision(void)
 {
     model_scan_for_badges();
-/*
-    char * names[] = {
-    "Alan",
-    "Ally", 
-    "Brenda",
-    "Bryan",
-    "Carol",
-    "Craig",
-    "Dalene",
-    "Darrell",
-    "Eric"
-    };
-    // Gus provisioning isn't working yet.  This function is a placeholder. 
-    // For now it just adds an entry in the gus data for each node. 
-    gd_init();
-    uint16_t svr_addr = 3;
-    for (int i=0; i<3; ++i) {
-       gd_add_node(i, names[i], svr_addr, i==0, false, false);
-       ++svr_addr;
-        
-    }
-    */
 }
 
-
+void model_set_name(uint16_t addr, const uint8_t *name)
+{
+    int err;
+    err = bt_mesh_gus_cli_name_set(&gus, addr, name);
+    if (err) {
+        printk("set name %d %s failed %d\n", addr, name, err);
+    }
+}
 
 
 /******************************************************************************/
