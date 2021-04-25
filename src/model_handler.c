@@ -144,10 +144,26 @@ static void handle_gus_set_state(struct bt_mesh_gus_cli *gus,
         */
 }
 
+static void handle_gus_sign_in(struct bt_mesh_gus_cli *gus,
+				 struct bt_mesh_msg_ctx *ctx)
+{
+
+}
+
+
+static void handle_gus_sign_in_reply(struct bt_mesh_gus_cli *gus,
+				 struct bt_mesh_msg_ctx *ctx,
+				 const uint8_t *msg)
+{
+    gd_add_node(msg, ctx->addr, false, false, false);
+}
+
 
 static const struct bt_mesh_gus_cli_handlers gus_handlers = {
 	.start = handle_gus_start,
 	.set_state = handle_gus_set_state,
+        .sign_in = handle_gus_sign_in,
+        .sign_in_reply = handle_gus_sign_in_reply,
 };
 
 static struct bt_mesh_gus_cli gus = {
@@ -155,21 +171,6 @@ static struct bt_mesh_gus_cli gus = {
 };
 
 
-
-
-
-
-
-#if 0
-static struct bt_mesh_elem elements[] = {
-	BT_MESH_ELEM(
-		1, BT_MESH_MODEL_LIST(
-			BT_MESH_MODEL_CFG_SRV,
-			BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
-                        BT_MESH_MODEL_GUS_CLI(&gus)),
-		BT_MESH_MODEL_NONE),
-};
-#else
 static struct bt_mesh_elem elements[] = {
 	BT_MESH_ELEM(
 		1,
@@ -178,13 +179,6 @@ static struct bt_mesh_elem elements[] = {
 			BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub)),
 		BT_MESH_MODEL_LIST(BT_MESH_MODEL_GUS_CLI(&gus))),
 };
-#endif
-
-
-
-
-
-
 
 static const struct bt_mesh_comp comp = {
 	.cid = CONFIG_BT_COMPANY_ID,
@@ -200,20 +194,28 @@ void model_handler_set_state(uint16_t addr, enum bt_mesh_gus_cli_state state)
 {
     int err;
 
-    enum bt_mesh_gus_cli_state gus_state = state;
-        printk("identify %d\n", addr);
-    err = bt_mesh_gus_cli_state_set(&gus, addr, gus_state);
+    printk("identify %d\n", addr);
+    err = bt_mesh_gus_cli_state_set(&gus, addr, state);
     if (err) {
-        printk("identify %d %d failed %d\n", addr,state, err);
+        printk("set state %d %d failed %d\n", addr,state, err);
     }
 }
 
 
 
-
+void model_scan_for_badges(void)
+{
+    int err;
+    err = bt_mesh_gus_cli_sign_in(&gus);
+    if (err) {
+        printk("sign in failed %d\n", err);
+    }
+}
 
 void model_handler_provision(void)
 {
+    model_scan_for_badges();
+/*
     char * names[] = {
     "Alan",
     "Ally", 
@@ -234,6 +236,7 @@ void model_handler_provision(void)
        ++svr_addr;
         
     }
+    */
 }
 
 

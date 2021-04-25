@@ -16,7 +16,7 @@ void set_masked(int index, bool masked);
 bool has_vaccine(int index);
 void set_vaccine(int index, bool vaccine);
 uint16_t get_element(int index);
-void gd_add_node(int index, char * name, uint16_t addr, bool virus, bool mask, bool vaccine);
+void gd_add_node(const char * name, uint16_t element, bool patient_zero, bool mask, bool vaccine);
 uint16_t gd_get_node_count(void);
 void gd_get_namelist(char * buf, int length);
 bool get_infected(int index);

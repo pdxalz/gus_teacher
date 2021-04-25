@@ -146,32 +146,31 @@ char * status_symbol(int index)
 void gd_init(void)
 {
     init_sim_settings();
-
-#if 0 // test data
-    gd_add_node(0, "Alan", 1, true, false, false);
-    gd_add_node(1, "Ally", 2, false, true, false);
-    gd_add_node(2, "Brenda", 3, false, false, true);
-    gd_add_node(3, "Bryan", 4, false, false, false);
-    gd_add_node(4, "Carol", 5, false, false, false);
-    gd_add_node(5, "Craig", 6, false, false, false);
-    gd_add_node(6, "Dalene", 7, false, false, false);
-    gd_add_node(7, "Darrell", 8, false, false, false);
-    gd_add_node(8, "Eric", 9, false, false, false);
-#endif
 }
 
-void gd_add_node(int index, char * name, uint16_t element, bool patient_zero, bool mask, bool vaccine)
+void gd_add_node(const char * name, uint16_t element, bool patient_zero, bool mask, bool vaccine)
 {
-    __ASSERT_NO_MSG(index < MAX_GUS_NODES);
+    int edit_node = node_count;
 
-    strncpy(gus_nodes[index].name, name, MAX_NAME_LENGTH);
-    gus_nodes[index].element = element;
-    gus_nodes[index].patient_zero = patient_zero;
-    gus_nodes[index].infected = patient_zero;
-    gus_nodes[index].mask = mask;
-    gus_nodes[index].vaccine = vaccine;
+    for (int i=0; i<node_count; ++i) {
+        if (gus_nodes[i].element = element) {
+            edit_node = i;
+            break;
+        }
+    }
 
-    ++node_count;
+    if (edit_node >= MAX_GUS_NODES) {
+        return;
+    }
+
+    strncpy(gus_nodes[edit_node].name, name, MAX_NAME_LENGTH);
+    gus_nodes[edit_node].element = element;
+    gus_nodes[edit_node].patient_zero = patient_zero;
+    gus_nodes[edit_node].infected = patient_zero;
+    gus_nodes[edit_node].mask = mask;
+    gus_nodes[edit_node].vaccine = vaccine;
+
+    ++edit_node;
 }
 
 char * get_name(int index)

@@ -22,6 +22,7 @@ extern "C" {
 const struct bt_mesh_comp *model_handler_init(void);
 void model_handler_provision(void);
 void model_handler_set_state(uint16_t index, enum bt_mesh_gus_cli_state state);
+void model_scan_for_badges(void);
 
 #ifdef __cplusplus
 }
