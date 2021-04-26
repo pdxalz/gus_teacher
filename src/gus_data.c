@@ -9,12 +9,11 @@
 
 #include <lvgl.h>
 
-#define ELEMENT_NOT_CONNECTED 0xffff
 #define INFECTION_THRESHOLD 200
 
 struct gus_node {
     char name[MAX_NAME_LENGTH];
-    uint16_t element;
+    uint16_t addr;
     bool patient_zero;
     bool infected;
     bool mask;
@@ -37,7 +36,7 @@ static void update_node_health_state(uint8_t index)
     } else if (has_vaccine(index)) {
         state = BT_MESH_GUS_CLI_VACCINATED;        
     }
-    model_handler_set_state(get_element(index), state);
+    model_handler_set_state(get_address(index), state);
 }
 
 
@@ -120,10 +119,10 @@ void gd_add_exposure(int index, uint32_t exposure, bool update)
 
 
 
-uint16_t get_element(int index)
+uint16_t get_address(int index)
 {
     __ASSERT_NO_MSG(index < MAX_GUS_NODES);
-    return gus_nodes[index].element;
+    return gus_nodes[index].addr;
 }
 
 
@@ -148,12 +147,12 @@ void gd_init(void)
     init_sim_settings();
 }
 
-void gd_add_node(const char * name, uint16_t element, bool patient_zero, bool mask, bool vaccine)
+void gd_add_node(const char * name, uint16_t addr, bool patient_zero, bool mask, bool vaccine)
 {
     int edit_node = node_count;
 
     for (int i=0; i<node_count; ++i) {
-        if (gus_nodes[i].element = element) {
+        if (gus_nodes[i].addr == addr) {
             edit_node = i;
             break;
         }
@@ -164,7 +163,7 @@ void gd_add_node(const char * name, uint16_t element, bool patient_zero, bool ma
     }
 
     strncpy(gus_nodes[edit_node].name, name, MAX_NAME_LENGTH);
-    gus_nodes[edit_node].element = element;
+    gus_nodes[edit_node].addr = addr;
     gus_nodes[edit_node].patient_zero = patient_zero;
     gus_nodes[edit_node].infected = patient_zero;
     gus_nodes[edit_node].mask = mask;
@@ -201,7 +200,7 @@ void gd_get_namelist(char * buf, int length)
     int pos = 0;
     buf[0] = '\0';
     for (int i=0; i<MAX_GUS_NODES; ++i) {
-        if (gus_nodes[i].element == ELEMENT_NOT_CONNECTED) {
+        if (gus_nodes[i].addr == 0) {
             break;
         }
         strncpy(&buf[pos], status_symbol(i), length - pos); 

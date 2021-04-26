@@ -61,7 +61,7 @@ void on_gui_event(gui_event_t *event)
                     update_checkboxes();
                     break;
             case GUI_EVT_IDENTIFY:
-                    model_handler_set_state(event->element, BT_MESH_GUS_CLI_IDENTIFY);
+                    model_handler_set_state(event->addr, BT_MESH_GUS_CLI_IDENTIFY);
                     break;
     }
 }

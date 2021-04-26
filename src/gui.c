@@ -294,9 +294,9 @@ static void cb_vaccine_event_cb(lv_obj_t * obj, lv_event_t event)
     }    
 }
 
-static uint16_t selected_element()
+static uint16_t selected_address()
 {
-    return get_element(lv_roller_get_selected(roller));
+    return get_address(lv_roller_get_selected(roller));
 }
 
 static void btn_scan_event_cb(lv_obj_t * obj, lv_event_t event)
@@ -309,7 +309,7 @@ static void btn_scan_event_cb(lv_obj_t * obj, lv_event_t event)
     } else  if(obj == btn_id && event == LV_EVENT_CLICKED) {
         if(m_gui_callback) { 
                 m_gui_event.evt_type = GUI_EVT_IDENTIFY;
-                m_gui_event.element = selected_element();
+                m_gui_event.addr = selected_address();
                 m_gui_callback(&m_gui_event);
         } 
     }   
@@ -647,7 +647,7 @@ static void kb_event_cb(lv_obj_t* _kb, lv_event_t e)
             printk("name: %s\n",name);
             int item = lv_roller_get_selected(roller);
             set_name(item, name);
-            model_set_name(get_element(item), name);
+            model_set_name(get_address(item), name);
             update_namelist();
 
             gus_mode = mode_badge;

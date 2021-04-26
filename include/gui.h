@@ -8,7 +8,7 @@ typedef enum {GUI_EVT_SCAN, GUI_EVT_IDENTIFY} gui_event_type_t;
 typedef struct
 {
 	gui_event_type_t evt_type;
-	uint8_t element;
+	uint16_t addr;
 } gui_event_t;
 
 typedef enum  {GUI_MSG_UPDATE_LIST, GUI_MSG_PROGRESS} gui_msg_type_t;
