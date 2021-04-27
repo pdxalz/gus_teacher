@@ -30,14 +30,26 @@ static void update_node_health_state(uint8_t index, bool initializing)
 {
     enum bt_mesh_gus_cli_state state = BT_MESH_GUS_CLI_HEALTHY;
 
-    if (get_infected(index)) {
-        state = BT_MESH_GUS_CLI_INFECTED;
-    } else if (has_mask(index)) {
-        state = BT_MESH_GUS_CLI_MASKED;        
-    } else if (has_vaccine(index)) {
-        state = BT_MESH_GUS_CLI_VACCINATED;        
-    }
+    //if (get_infected(index)) {
+    //    state = BT_MESH_GUS_CLI_INFECTED;
+    //} else if (has_mask(index)) {
+    //    state = BT_MESH_GUS_CLI_MASKED;        
+    //} else if (has_vaccine(index)) {
+    //    state = BT_MESH_GUS_CLI_VACCINATED;        
+    //}
 
+    state = has_vaccine(index) ? 
+                (has_mask(index) ? 
+                    (get_infected(index) ? BT_MESH_GUS_CLI_VACCINATED_MASKED_INFECTED
+                                         : BT_MESH_GUS_CLI_VACCINATED_MASKED) :
+                    (get_infected(index) ? BT_MESH_GUS_CLI_VACCINATED_INFECTED
+                                         : BT_MESH_GUS_CLI_VACCINATED) ) :
+                (has_mask(index) ? 
+                    (get_infected(index) ? BT_MESH_GUS_CLI_MASKED_INFECTED
+                                         : BT_MESH_GUS_CLI_MASKED) :
+                    (get_infected(index) ? BT_MESH_GUS_CLI_INFECTED
+                                         : BT_MESH_GUS_CLI_HEALTHY) );
+                       
     if (initializing && (state == BT_MESH_GUS_CLI_HEALTHY)) {
         return;
     }
