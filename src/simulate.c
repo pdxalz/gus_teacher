@@ -89,7 +89,7 @@ static void calc_time_to_complete(void)
 
 static void restart_sim( uint8_t rows, uint8_t space)
 {
-printk("restart\n");
+//printk("restart\n");
     simulate_contacts(rows, space);
     calc_time_to_complete();
     reset_exposures(true);

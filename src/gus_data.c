@@ -26,7 +26,7 @@ struct gus_node gus_nodes[MAX_GUS_NODES];
 uint16_t node_count;
 
 
-static void update_node_health_state(uint8_t index)
+static void update_node_health_state(uint8_t index, bool initializing)
 {
     enum bt_mesh_gus_cli_state state = BT_MESH_GUS_CLI_HEALTHY;
 
@@ -37,6 +37,12 @@ static void update_node_health_state(uint8_t index)
     } else if (has_vaccine(index)) {
         state = BT_MESH_GUS_CLI_VACCINATED;        
     }
+
+    if (initializing && (state == BT_MESH_GUS_CLI_HEALTHY)) {
+        return;
+    }
+    printk("update node %d %d %d\n", index, state, initializing);
+    k_sleep(K_MSEC(120));
     model_handler_set_state(get_address(index), state);
 }
 
@@ -111,7 +117,7 @@ void gd_add_exposure(int index, uint32_t exposure, bool update)
     if (gus_nodes[index].exposure > INFECTION_THRESHOLD) {
         set_infected(index, true);
         if (update) {
-            update_node_health_state(index);
+            update_node_health_state(index, false);
         }
     }
 }
@@ -229,11 +235,16 @@ uint16_t gd_get_node_count(void)
 
 void reset_exposures(bool update)
 {
+    // publish health to all
+    if (update) {
+        model_handler_set_state(0, BT_MESH_GUS_CLI_HEALTHY);
+    }
+
     for (int i=0; i < gd_get_node_count(); ++i) {
         set_exposure(i, 0);
         set_infected(i, is_patient_zero(i));
         if (update) {
-            update_node_health_state(i);
+            update_node_health_state(i, true);
         }
     }
 }

@@ -659,21 +659,30 @@ static void kb_event_cb(lv_obj_t* _kb, lv_event_t e)
 
 static void btn_badge_event_cb(lv_obj_t* btn, lv_event_t e)
 {
-    gus_mode = mode_badge;
-    update_control_visibility();
+    if(e == LV_EVENT_CLICKED) {
+        gus_mode = mode_badge;
+        model_handler_set_state(0, BT_MESH_GUS_CLI_OFF);
+        update_control_visibility();
+    }
 }
 
 static void btn_config_event_cb(lv_obj_t* btn, lv_event_t e)
 {
-    gus_mode = mode_config;
-    update_control_visibility();
+    if(e == LV_EVENT_CLICKED) {
+        gus_mode = mode_config;
+        model_handler_set_state(0, BT_MESH_GUS_CLI_OFF);
+
+        update_control_visibility();
+    }
 }
 
 static void btn_analyze_event_cb(lv_obj_t* btn, lv_event_t e)
 {
-    gus_mode = mode_analyze;
-    restart_simulation();
-    update_control_visibility();
+    if(e == LV_EVENT_CLICKED) {
+        gus_mode = mode_analyze;
+        restart_simulation();
+        update_control_visibility();
+    }
 }
 
 static void btn_edit_name_event_cb(lv_obj_t* btn, lv_event_t e)

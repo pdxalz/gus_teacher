@@ -123,26 +123,7 @@ static void handle_gus_set_state(struct bt_mesh_gus_cli *gus,
 				 struct bt_mesh_msg_ctx *ctx,
 				 enum bt_mesh_gus_cli_state state)
 {
-    printk("set state:  %x %d\n", ctx->addr, state);
 
-    /*
-	if (address_is_local(chat->model, ctx->addr)) {
-		if (address_is_unicast(ctx->recv_dst)) {
-			shell_print(chat_shell, "<you> are %s",
-				    presence_string[presence]);
-		}
-	} else {
-		if (address_is_unicast(ctx->recv_dst)) {
-			shell_print(chat_shell, "<0x%04X> is %s", ctx->addr,
-				    presence_string[presence]);
-		} else if (presence_cache_entry_check_and_update(ctx->addr,
-								 presence)) {
-			shell_print(chat_shell, "<0x%04X> is now %s",
-				    ctx->addr,
-				    presence_string[presence]);
-		}
-	}
-        */
 }
 
 
@@ -188,10 +169,15 @@ void model_handler_set_state(uint16_t addr, enum bt_mesh_gus_cli_state state)
 {
     int err;
 
-    printk("identify %d\n", addr);
+//    printk("identify %d\n", addr);
+
+    if (addr == 0) {
+        addr = 0xc000;   //todo
+    }
+
     err = bt_mesh_gus_cli_state_set(&gus, addr, state);
     if (err) {
-        printk("set state %d %d failed %d\n", addr,state, err);
+        printk("error set state %d %d failed %d\n", addr,state, err);
     }
 }
 

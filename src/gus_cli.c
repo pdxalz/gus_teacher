@@ -303,12 +303,15 @@ int bt_mesh_gus_cli_sign_in_reply(struct bt_mesh_gus_cli *gus,
 int bt_mesh_gus_cli_state_set(struct bt_mesh_gus_cli *gus,
 				  uint16_t addr,
 				  enum bt_mesh_gus_cli_state state)
-{				  
+{	
+printk("set st: %d %d\n", addr, state);			  
 	struct bt_mesh_msg_ctx ctx = {
 		.addr = addr,
 		.app_idx = gus->model->keys[0],
 		.send_ttl = BT_MESH_TTL_DEFAULT,
-		.send_rel = true,
+//		.send_rel = true,
+		.send_rel = false,
+
 	};
 
 	BT_MESH_MODEL_BUF_DEFINE(buf, BT_MESH_GUS_CLI_OP_SET_STATE,

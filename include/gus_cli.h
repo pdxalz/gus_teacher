@@ -83,6 +83,8 @@ enum bt_mesh_gus_cli_state {
 	BT_MESH_GUS_CLI_VACCINATED_INFECTED,
 	BT_MESH_GUS_CLI_VACCINATED_MASKED,
 	BT_MESH_GUS_CLI_VACCINATED_MASKED_INFECTED,	
+        BT_MESH_GUS_CLI_OFF = BT_MESH_GUS_CLI_VACCINATED_MASKED_INFECTED,  //todo	
+
 };
 
 /* Forward declaration of the Bluetooth Mesh Gus Client model context. */
