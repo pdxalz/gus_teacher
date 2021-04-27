@@ -6,6 +6,7 @@
 #include "contacts.h"
 #include "sim_settings.h"
 #include "model_handler.h"
+#include "gui.h"
 
 #include <lvgl.h>
 
@@ -149,27 +150,30 @@ void gd_init(void)
 
 void gd_add_node(const char * name, uint16_t addr, bool patient_zero, bool mask, bool vaccine)
 {
-    int edit_node = node_count;
+    int i;
 
-    for (int i=0; i<node_count; ++i) {
+    if (node_count >= MAX_GUS_NODES) {
+        return;
+    }
+
+    for (i=0; i<node_count; ++i) {
         if (gus_nodes[i].addr == addr) {
-            edit_node = i;
             break;
         }
     }
 
-    if (edit_node >= MAX_GUS_NODES) {
-        return;
+    if (i==node_count) {
+        ++node_count;
     }
 
-    strncpy(gus_nodes[edit_node].name, name, MAX_NAME_LENGTH);
-    gus_nodes[edit_node].addr = addr;
-    gus_nodes[edit_node].patient_zero = patient_zero;
-    gus_nodes[edit_node].infected = patient_zero;
-    gus_nodes[edit_node].mask = mask;
-    gus_nodes[edit_node].vaccine = vaccine;
+    strncpy(gus_nodes[i].name, name, MAX_NAME_LENGTH);
+    gus_nodes[i].addr = addr;
+    gus_nodes[i].patient_zero = patient_zero;
+    gus_nodes[i].infected = patient_zero;
+    gus_nodes[i].mask = mask;
+    gus_nodes[i].vaccine = vaccine;
 
-    ++edit_node;
+    gui_update_namelist();
 }
 
 char * get_name(int index)

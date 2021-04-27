@@ -78,7 +78,6 @@ static void handle_sign_in_reply(struct bt_mesh_model *model,
 {
 	struct bt_mesh_gus_cli *gus = model->user_data;
 	const uint8_t *msg;
-
 	msg = extract_name(buf);
 
 	if (gus->handlers->sign_in_reply) {
@@ -306,9 +305,26 @@ const struct bt_mesh_model_cb _bt_mesh_gus_cli_cb = {
 
 int bt_mesh_gus_cli_sign_in(struct bt_mesh_gus_cli *gus)
 {
+
 	struct net_buf_simple *buf = gus->model->pub->msg;  //todo needs conversion?
 	bt_mesh_model_msg_init(buf, BT_MESH_GUS_CLI_OP_SIGN_IN);
 	return bt_mesh_model_publish(gus->model);	
+
+#if 0  //todo remove experimental hack
+	struct bt_mesh_msg_ctx ctx = {
+		.addr = 0xc000,
+		.app_idx = gus->model->keys[0],
+		.send_ttl = BT_MESH_TTL_DEFAULT,
+		.send_rel = false,
+	};
+
+	BT_MESH_MODEL_BUF_DEFINE(buf, BT_MESH_GUS_CLI_OP_SIGN_IN,
+				 BT_MESH_GUS_CLI_MSG_LEN_SET_STATE);
+	bt_mesh_model_msg_init(&buf, BT_MESH_GUS_CLI_OP_SIGN_IN);
+	net_buf_simple_add_u8(&buf, 0);
+
+	return bt_mesh_model_send(gus->model, &ctx, &buf, NULL, NULL);
+#endif
 }
 
 int bt_mesh_gus_cli_state_set(struct bt_mesh_gus_cli *gus,

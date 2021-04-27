@@ -59,10 +59,11 @@ static void button_handler_cb(uint32_t pressed, uint32_t changed)
         model_handler_set_state(3, 1);
     } else  if ((pressed & changed & BIT(1)))
     {
-        model_handler_set_state(4, 1);
+        model_handler_set_state(7, 1);
     } else  if ((pressed & changed & BIT(2)))
     {
-        model_handler_set_state(4, 2);
+        //model_handler_set_state(4, 2);
+        model_scan_for_badges();
     } else  if ((pressed & changed & BIT(3)))
     {
         model_handler_set_state(0xc000, 3);
