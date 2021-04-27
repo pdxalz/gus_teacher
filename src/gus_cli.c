@@ -17,11 +17,11 @@ LOG_MODULE_DECLARE(gus);
 BUILD_ASSERT(BT_MESH_MODEL_BUF_LEN(BT_MESH_GUS_CLI_OP_SET_NAME,
 				   CONFIG_BT_MESH_GUS_NAME_LENGTH) <=
 		    BT_MESH_RX_SDU_MAX,
-	     "The name must fit inside an application SDU.");
+	     "The message must fit inside an application SDU.");
 BUILD_ASSERT(BT_MESH_MODEL_BUF_LEN(BT_MESH_GUS_CLI_OP_SET_NAME,
 				   CONFIG_BT_MESH_GUS_NAME_LENGTH) <=
 		    BT_MESH_TX_SDU_MAX,
-	     "The name must fit inside an application SDU.");
+	     "The message must fit inside an application SDU.");
 
 
 static const uint8_t *extract_name(struct net_buf_simple *buf)
@@ -34,16 +34,6 @@ static const uint8_t *extract_name(struct net_buf_simple *buf)
 ////////////////////
 // message handlers
 ///////////////////
-static const uint8_t * spare_name(uint16_t addr)
-{
-    const uint8_t * spare_names[] = {
-    "Alan",    "Ally",    "Brenda", "Bryan", "Carol", "Craig",
-    "Dalene",  "Darrell", "Eric"    };
-
-#define SPARE_NAME_LEN (sizeof(spare_names)/ sizeof(char *))
-    return spare_names[addr % SPARE_NAME_LEN];
-}
-
 
 static void handle_sign_in(struct bt_mesh_model *model,
 				 struct bt_mesh_msg_ctx *ctx,
@@ -52,24 +42,10 @@ static void handle_sign_in(struct bt_mesh_model *model,
 
 	struct bt_mesh_gus_cli *gus = model->user_data;
 
+        uint16_t addr = bt_mesh_model_elem(model)->addr;
 	if (gus->handlers->sign_in) {
-		gus->handlers->sign_in(gus, ctx);
+		gus->handlers->sign_in(gus, ctx, addr);
 	}
-
-	BT_MESH_MODEL_BUF_DEFINE(msg, BT_MESH_GUS_CLI_OP_SIGN_IN_REPLY,
-				 BT_MESH_GUS_CLI_MSG_LEN_SIGN_IN_REPLY);
-	bt_mesh_model_msg_init(&msg, BT_MESH_GUS_CLI_OP_SIGN_IN_REPLY);
-
-        const uint8_t * name = gus->name;
-        size_t len = strlen(name);
-        if (len < 1) {
-            name = spare_name(ctx->addr);
-            len = strlen(name);
-        }
-        net_buf_simple_add_mem(&msg, name, len);
-       	net_buf_simple_add_u8(&msg, '\0');
-
-	(void)bt_mesh_model_send(gus->model, ctx, &msg, NULL, NULL);
 }
 
 static void handle_sign_in_reply(struct bt_mesh_model *model,
@@ -77,11 +53,12 @@ static void handle_sign_in_reply(struct bt_mesh_model *model,
 			   struct net_buf_simple *buf)
 {
 	struct bt_mesh_gus_cli *gus = model->user_data;
-	const uint8_t *msg;
-	msg = extract_name(buf);
+	const uint8_t *name;
+
+	name = extract_name(buf);
 
 	if (gus->handlers->sign_in_reply) {
-		gus->handlers->sign_in_reply(gus, ctx, msg);
+		gus->handlers->sign_in_reply(gus, ctx, name);
 	}
 }
 
@@ -110,7 +87,7 @@ static void handle_set_name(struct bt_mesh_model *model,
 
 	msg = extract_name(buf);
 
-        strncpy(gus->name, msg, GUS_NAME_LEN);
+        strncpy(gus->name, msg, CONFIG_BT_MESH_GUS_NAME_LENGTH);
 	if (gus->handlers->set_name) {
 		gus->handlers->set_name(gus, ctx, msg);
 	}
@@ -255,8 +232,6 @@ static int bt_mesh_gus_cli_init(struct bt_mesh_model *model)
         net_buf_simple_init_with_data(&gus->pub_msg, gus->buf,
 				      sizeof(gus->buf));
 
-	//net_buf_simple_init_with_data(&gus->pub_msg, gus->name,
-	//			      sizeof(gus->name));
 	gus->pub.msg = &gus->pub_msg;
 	gus->pub.update = NULL; //bt_mesh_gus_cli_update_handler;
 
@@ -305,26 +280,24 @@ const struct bt_mesh_model_cb _bt_mesh_gus_cli_cb = {
 
 int bt_mesh_gus_cli_sign_in(struct bt_mesh_gus_cli *gus)
 {
-
-	struct net_buf_simple *buf = gus->model->pub->msg;  //todo needs conversion?
+	struct net_buf_simple *buf = gus->model->pub->msg;
 	bt_mesh_model_msg_init(buf, BT_MESH_GUS_CLI_OP_SIGN_IN);
 	return bt_mesh_model_publish(gus->model);	
+}
 
-#if 0  //todo remove experimental hack
-	struct bt_mesh_msg_ctx ctx = {
-		.addr = 0xc000,
-		.app_idx = gus->model->keys[0],
-		.send_ttl = BT_MESH_TTL_DEFAULT,
-		.send_rel = false,
-	};
+int bt_mesh_gus_cli_sign_in_reply(struct bt_mesh_gus_cli *gus, 
+                                    struct bt_mesh_msg_ctx *ctx, 
+                                    const uint8_t * name)
+{
+	BT_MESH_MODEL_BUF_DEFINE(msg, BT_MESH_GUS_CLI_OP_SIGN_IN_REPLY,
+				 BT_MESH_GUS_CLI_MSG_LEN_SIGN_IN_REPLY);
+	bt_mesh_model_msg_init(&msg, BT_MESH_GUS_CLI_OP_SIGN_IN_REPLY);
 
-	BT_MESH_MODEL_BUF_DEFINE(buf, BT_MESH_GUS_CLI_OP_SIGN_IN,
-				 BT_MESH_GUS_CLI_MSG_LEN_SET_STATE);
-	bt_mesh_model_msg_init(&buf, BT_MESH_GUS_CLI_OP_SIGN_IN);
-	net_buf_simple_add_u8(&buf, 0);
+        size_t len = strlen(name);
+        net_buf_simple_add_mem(&msg, name, len);
+       	net_buf_simple_add_u8(&msg, '\0');
 
-	return bt_mesh_model_send(gus->model, &ctx, &buf, NULL, NULL);
-#endif
+	return bt_mesh_model_send(gus->model, ctx, &msg, NULL, NULL);
 }
 
 int bt_mesh_gus_cli_state_set(struct bt_mesh_gus_cli *gus,

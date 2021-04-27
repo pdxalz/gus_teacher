@@ -145,12 +145,6 @@ static void handle_gus_set_state(struct bt_mesh_gus_cli *gus,
         */
 }
 
-static void handle_gus_sign_in(struct bt_mesh_gus_cli *gus,
-				 struct bt_mesh_msg_ctx *ctx)
-{
-
-}
-
 
 static void handle_gus_sign_in_reply(struct bt_mesh_gus_cli *gus,
 				 struct bt_mesh_msg_ctx *ctx,
@@ -163,7 +157,6 @@ static void handle_gus_sign_in_reply(struct bt_mesh_gus_cli *gus,
 static const struct bt_mesh_gus_cli_handlers gus_handlers = {
 	.start = handle_gus_start,
 	.set_state = handle_gus_set_state,
-        .sign_in = handle_gus_sign_in,
         .sign_in_reply = handle_gus_sign_in_reply,
 };
 
