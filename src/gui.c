@@ -748,6 +748,12 @@ static void process_cmd_msg_queue(void)
 }
 
 
+uint16_t gui_get_selected_addr(void) 
+{
+    int item = lv_roller_get_selected(roller);
+    return get_address(item);
+}
+
 void gui_run(void)
 {
     gd_init();

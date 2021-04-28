@@ -51,19 +51,25 @@ static void attention_off(struct bt_mesh_model *mod)
 	dk_set_leds(DK_NO_LEDS_MSK);
 }
 
-
+uint16_t gui_get_selected_addr(void);
 static void button_handler_cb(uint32_t pressed, uint32_t changed)
 {
     if ((pressed & changed & BIT(0)))
     {
-        model_handler_set_state(3, 1);
+        
+        model_report_request(gui_get_selected_addr());
+
+
+
+
+//        model_handler_set_state(3, 1);
     } else  if ((pressed & changed & BIT(1)))
     {
-        model_handler_set_state(7, 1);
+        model_handler_set_state(gui_get_selected_addr(), 6);
     } else  if ((pressed & changed & BIT(2)))
     {
         //model_handler_set_state(4, 2);
-        model_scan_for_badges();
+        model_handler_set_state(gui_get_selected_addr(), 2);
     } else  if ((pressed & changed & BIT(3)))
     {
         model_handler_set_state(0xc000, 3);
@@ -134,11 +140,19 @@ static void handle_gus_sign_in_reply(struct bt_mesh_gus_cli *gus,
     gd_add_node(msg, ctx->addr, false, false, false);
 }
 
+static void handle_gus_report_reply(struct bt_mesh_gus_cli *gus,
+				 struct bt_mesh_msg_ctx *ctx,
+				 const uint8_t *msg)
+{
+    printk("report received %d %d %d\n", msg[0], msg[1], msg[2]);
+}
+
 
 static const struct bt_mesh_gus_cli_handlers gus_handlers = {
 	.start = handle_gus_start,
 	.set_state = handle_gus_set_state,
         .sign_in_reply = handle_gus_sign_in_reply,
+        .report_reply = handle_gus_report_reply,
 };
 
 static struct bt_mesh_gus_cli gus = {
@@ -206,6 +220,17 @@ void model_set_name(uint16_t addr, const uint8_t *name)
     }
 }
 
+void model_report_request(uint16_t addr)
+{
+    int err;
+    
+    printk("requesting report %d\n", addr);
+
+    err = bt_mesh_gus_cli_report_request(&gus, addr);
+    if (err) {
+        printk("report request %d failed %d\n", addr, err);
+    }
+}
 
 /******************************************************************************/
 /******************************** Public API **********************************/
