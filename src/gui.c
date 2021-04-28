@@ -8,6 +8,7 @@
 #include "gus_config.h"
 #include "gus_data.h"
 #include "simulate.h"
+#include "model_handler.h"
 
 const struct device *display_dev;
 
@@ -293,9 +294,9 @@ static void cb_vaccine_event_cb(lv_obj_t * obj, lv_event_t event)
     }    
 }
 
-static uint16_t selected_element()
+static uint16_t selected_address()
 {
-    return get_element(lv_roller_get_selected(roller));
+    return get_address(lv_roller_get_selected(roller));
 }
 
 static void btn_scan_event_cb(lv_obj_t * obj, lv_event_t event)
@@ -308,7 +309,7 @@ static void btn_scan_event_cb(lv_obj_t * obj, lv_event_t event)
     } else  if(obj == btn_id && event == LV_EVENT_CLICKED) {
         if(m_gui_callback) { 
                 m_gui_event.evt_type = GUI_EVT_IDENTIFY;
-                m_gui_event.element = selected_element();
+                m_gui_event.addr = selected_address();
                 m_gui_callback(&m_gui_event);
         } 
     }   
@@ -319,7 +320,7 @@ static void restart_simulation(void)
             uint8_t rows = lv_spinbox_get_value(spinbox_rows);
             uint8_t space = lv_spinbox_get_value(spinbox_space);
             uint8_t rate = lv_spinbox_get_value(spinbox_rate);
-            printk("rsr %d %d %d", rows, space, rate);
+//            printk("rsr %d %d %d", rows, space, rate);
             sim_msg_restart(rows, space, rate);
 }
 
@@ -646,6 +647,7 @@ static void kb_event_cb(lv_obj_t* _kb, lv_event_t e)
             printk("name: %s\n",name);
             int item = lv_roller_get_selected(roller);
             set_name(item, name);
+            model_set_name(get_address(item), name);
             update_namelist();
 
             gus_mode = mode_badge;
@@ -657,21 +659,30 @@ static void kb_event_cb(lv_obj_t* _kb, lv_event_t e)
 
 static void btn_badge_event_cb(lv_obj_t* btn, lv_event_t e)
 {
-    gus_mode = mode_badge;
-    update_control_visibility();
+    if(e == LV_EVENT_CLICKED) {
+        gus_mode = mode_badge;
+        model_handler_set_state(0, BT_MESH_GUS_CLI_OFF);
+        update_control_visibility();
+    }
 }
 
 static void btn_config_event_cb(lv_obj_t* btn, lv_event_t e)
 {
-    gus_mode = mode_config;
-    update_control_visibility();
+    if(e == LV_EVENT_CLICKED) {
+        gus_mode = mode_config;
+        model_handler_set_state(0, BT_MESH_GUS_CLI_OFF);
+
+        update_control_visibility();
+    }
 }
 
 static void btn_analyze_event_cb(lv_obj_t* btn, lv_event_t e)
 {
-    gus_mode = mode_analyze;
-    restart_simulation();
-    update_control_visibility();
+    if(e == LV_EVENT_CLICKED) {
+        gus_mode = mode_analyze;
+        restart_simulation();
+        update_control_visibility();
+    }
 }
 
 static void btn_edit_name_event_cb(lv_obj_t* btn, lv_event_t e)

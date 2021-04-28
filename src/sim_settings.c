@@ -6,9 +6,6 @@
 
 #include <lvgl.h>
 
-#define ELEMENT_NOT_CONNECTED 0xffff
-
-
 struct sim_config {
     bool proximity;
     uint8_t rows;

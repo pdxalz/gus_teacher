@@ -6,15 +6,15 @@
 #include "contacts.h"
 #include "sim_settings.h"
 #include "model_handler.h"
+#include "gui.h"
 
 #include <lvgl.h>
 
-#define ELEMENT_NOT_CONNECTED 0xffff
 #define INFECTION_THRESHOLD 200
 
 struct gus_node {
     char name[MAX_NAME_LENGTH];
-    uint16_t element;
+    uint16_t addr;
     bool patient_zero;
     bool infected;
     bool mask;
@@ -26,18 +26,36 @@ struct gus_node gus_nodes[MAX_GUS_NODES];
 uint16_t node_count;
 
 
-static void update_node_health_state(uint8_t index)
+static void update_node_health_state(uint8_t index, bool initializing)
 {
-    gus_state_t state = GUS_ST_HEALTHY;
+    enum bt_mesh_gus_cli_state state = BT_MESH_GUS_CLI_HEALTHY;
 
-    if (get_infected(index)) {
-        state = GUS_ST_INFECTED;
-    } else if (has_mask(index)) {
-        state = GUS_ST_MASKED;        
-    } else if (has_vaccine(index)) {
-        state = GUS_ST_VACCINE;        
+    //if (get_infected(index)) {
+    //    state = BT_MESH_GUS_CLI_INFECTED;
+    //} else if (has_mask(index)) {
+    //    state = BT_MESH_GUS_CLI_MASKED;        
+    //} else if (has_vaccine(index)) {
+    //    state = BT_MESH_GUS_CLI_VACCINATED;        
+    //}
+
+    state = has_vaccine(index) ? 
+                (has_mask(index) ? 
+                    (get_infected(index) ? BT_MESH_GUS_CLI_VACCINATED_MASKED_INFECTED
+                                         : BT_MESH_GUS_CLI_VACCINATED_MASKED) :
+                    (get_infected(index) ? BT_MESH_GUS_CLI_VACCINATED_INFECTED
+                                         : BT_MESH_GUS_CLI_VACCINATED) ) :
+                (has_mask(index) ? 
+                    (get_infected(index) ? BT_MESH_GUS_CLI_MASKED_INFECTED
+                                         : BT_MESH_GUS_CLI_MASKED) :
+                    (get_infected(index) ? BT_MESH_GUS_CLI_INFECTED
+                                         : BT_MESH_GUS_CLI_HEALTHY) );
+                       
+    if (initializing && (state == BT_MESH_GUS_CLI_HEALTHY)) {
+        return;
     }
-    model_handler_set_state(get_element(index), state);
+    printk("update node %d %d %d\n", index, state, initializing);
+    k_sleep(K_MSEC(120));
+    model_handler_set_state(get_address(index), state);
 }
 
 
@@ -111,7 +129,7 @@ void gd_add_exposure(int index, uint32_t exposure, bool update)
     if (gus_nodes[index].exposure > INFECTION_THRESHOLD) {
         set_infected(index, true);
         if (update) {
-            update_node_health_state(index);
+            update_node_health_state(index, false);
         }
     }
 }
@@ -120,10 +138,10 @@ void gd_add_exposure(int index, uint32_t exposure, bool update)
 
 
 
-uint16_t get_element(int index)
+uint16_t get_address(int index)
 {
     __ASSERT_NO_MSG(index < MAX_GUS_NODES);
-    return gus_nodes[index].element;
+    return gus_nodes[index].addr;
 }
 
 
@@ -146,32 +164,34 @@ char * status_symbol(int index)
 void gd_init(void)
 {
     init_sim_settings();
-
-#if 0 // test data
-    gd_add_node(0, "Alan", 1, true, false, false);
-    gd_add_node(1, "Ally", 2, false, true, false);
-    gd_add_node(2, "Brenda", 3, false, false, true);
-    gd_add_node(3, "Bryan", 4, false, false, false);
-    gd_add_node(4, "Carol", 5, false, false, false);
-    gd_add_node(5, "Craig", 6, false, false, false);
-    gd_add_node(6, "Dalene", 7, false, false, false);
-    gd_add_node(7, "Darrell", 8, false, false, false);
-    gd_add_node(8, "Eric", 9, false, false, false);
-#endif
 }
 
-void gd_add_node(int index, char * name, uint16_t element, bool patient_zero, bool mask, bool vaccine)
+void gd_add_node(const char * name, uint16_t addr, bool patient_zero, bool mask, bool vaccine)
 {
-    __ASSERT_NO_MSG(index < MAX_GUS_NODES);
+    int i;
 
-    strncpy(gus_nodes[index].name, name, MAX_NAME_LENGTH);
-    gus_nodes[index].element = element;
-    gus_nodes[index].patient_zero = patient_zero;
-    gus_nodes[index].infected = patient_zero;
-    gus_nodes[index].mask = mask;
-    gus_nodes[index].vaccine = vaccine;
+    if (node_count >= MAX_GUS_NODES) {
+        return;
+    }
 
-    ++node_count;
+    for (i=0; i<node_count; ++i) {
+        if (gus_nodes[i].addr == addr) {
+            break;
+        }
+    }
+
+    if (i==node_count) {
+        ++node_count;
+    }
+
+    strncpy(gus_nodes[i].name, name, MAX_NAME_LENGTH);
+    gus_nodes[i].addr = addr;
+    gus_nodes[i].patient_zero = patient_zero;
+    gus_nodes[i].infected = patient_zero;
+    gus_nodes[i].mask = mask;
+    gus_nodes[i].vaccine = vaccine;
+
+    gui_update_namelist();
 }
 
 char * get_name(int index)
@@ -202,7 +222,7 @@ void gd_get_namelist(char * buf, int length)
     int pos = 0;
     buf[0] = '\0';
     for (int i=0; i<MAX_GUS_NODES; ++i) {
-        if (gus_nodes[i].element == ELEMENT_NOT_CONNECTED) {
+        if (gus_nodes[i].addr == 0) {
             break;
         }
         strncpy(&buf[pos], status_symbol(i), length - pos); 
@@ -227,11 +247,16 @@ uint16_t gd_get_node_count(void)
 
 void reset_exposures(bool update)
 {
+    // publish health to all
+    if (update) {
+        model_handler_set_state(0, BT_MESH_GUS_CLI_HEALTHY);
+    }
+
     for (int i=0; i < gd_get_node_count(); ++i) {
         set_exposure(i, 0);
         set_infected(i, is_patient_zero(i));
         if (update) {
-            update_node_health_state(i);
+            update_node_health_state(i, true);
         }
     }
 }

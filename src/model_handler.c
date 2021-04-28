@@ -18,103 +18,12 @@
 #include <bluetooth/mesh/access.h>
 #include "gus_config.h"
 #include "gus_data.h"
-
-/* Light switch behavior */
-
-/** Context for a single light switch. */
-struct button {
-	/** Current light status of the corresponding server. */
-	uint16_t status;
-	/** Generic lvl client instance for this switch. */
-	struct bt_mesh_lvl_cli client;
-};
-
-static void status_handler(struct bt_mesh_lvl_cli *cli,
-			   struct bt_mesh_msg_ctx *ctx,
-			   const struct bt_mesh_lvl_status *status);
-
-static struct button buttons[MAX_GUS_NODES] = {
-	[0 ... MAX_GUS_NODES-1] = { .client = BT_MESH_LVL_CLI_INIT(&status_handler) },
-};
+#include "gus_cli.h"
 
 
-static int gus_badge_count(void)
-{
-    int count = 0;
-    for (int i=0; i<MAX_GUS_NODES; ++i) {
-        printk(" %d, ", buttons[i].client.pub.addr);
-
-        if (buttons[i].client.pub.addr != 0) {
-            ++count;
-        }
-    }    return count;
-}
+#define STATE_CACHE_SIZE 10
 
 
-
-static void status_handler(struct bt_mesh_lvl_cli *cli,
-			   struct bt_mesh_msg_ctx *ctx,
-			   const struct bt_mesh_lvl_status *status)
-{
-	struct button *button =
-		CONTAINER_OF(cli, struct button, client);
-	int index = button - &buttons[0];
-
-	button->status = status->current;
-        if (index < 4) {
-            dk_set_led(index, status->current);
-        }
-	printk("Button %d: Received response: %s\n", index + 1,
-	       status->current ? "on" : "off");
-}
-uint16_t count=0;
-static void button_handler_cb(uint32_t pressed, uint32_t changed)
-{
-	if (!bt_mesh_is_provisioned()) {
-		return;
-	}
-
-	for (int i = 0; i < 4; ++i) {
-		if (!(pressed & changed & BIT(i))) {
-			continue;
-		}
-
-                count+= 0x2000;
-		struct bt_mesh_lvl_set set = {
-			.lvl = count,
-		};
-		int err;
-
-		/* As we can't know how many nodes are in a group, it doesn't
-		 * make sense to send acknowledged messages to group addresses -
-		 * we won't be able to make use of the responses anyway.
-		 */
-		if (bt_mesh_model_pub_is_unicast(buttons[i].client.model)) {
-			err = bt_mesh_lvl_cli_set(&buttons[i].client, NULL,
-						    &set, NULL);
-		} else {
-			err = bt_mesh_lvl_cli_set_unack(&buttons[i].client,
-							  NULL, &set);
-			if (!err) {
-				/* There'll be no response status for the
-				 * unacked message. Set the state immediately.
-				 */
-				buttons[i].status = set.lvl;
-                                if (i<4) {
-                                    dk_set_led(i, set.lvl);
-                                }
-			}
-		}
-
-		if (err) {
-			printk("lvl %d set failed: %d\n", i + 1, err);
-		}
-	}
-}
-
-/* Set up a repeating delayed work to blink the DK's LEDs when attention is
- * requested.
- */
 static struct k_delayed_work attention_blink_work;
 
 static void attention_blink(struct k_work *work)
@@ -142,6 +51,28 @@ static void attention_off(struct bt_mesh_model *mod)
 	dk_set_leds(DK_NO_LEDS_MSK);
 }
 
+
+static void button_handler_cb(uint32_t pressed, uint32_t changed)
+{
+    if ((pressed & changed & BIT(0)))
+    {
+        model_handler_set_state(3, 1);
+    } else  if ((pressed & changed & BIT(1)))
+    {
+        model_handler_set_state(7, 1);
+    } else  if ((pressed & changed & BIT(2)))
+    {
+        //model_handler_set_state(4, 2);
+        model_scan_for_badges();
+    } else  if ((pressed & changed & BIT(3)))
+    {
+        model_handler_set_state(0xc000, 3);
+    }
+
+}
+//////////////////////////////
+//  Health server
+//////////////////////////////
 static const struct bt_mesh_health_srv_cb health_srv_cb = {
 	.attn_on = attention_on,
 	.attn_off = attention_off,
@@ -153,50 +84,75 @@ static struct bt_mesh_health_srv health_srv = {
 
 BT_MESH_HEALTH_PUB_DEFINE(health_pub, 0);
 
-static struct bt_mesh_elem elements[MAX_GUS_NODES] = {
-	BT_MESH_ELEM(1,
-		     BT_MESH_MODEL_LIST(
-			     BT_MESH_MODEL_CFG_SRV,
-			     BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
-			     BT_MESH_MODEL_LVL_CLI(&buttons[0].client)),
-		     BT_MESH_MODEL_NONE),
-	BT_MESH_ELEM(2,
-		     BT_MESH_MODEL_LIST(
-			     BT_MESH_MODEL_LVL_CLI(&buttons[1].client)),
-		     BT_MESH_MODEL_NONE),
-	BT_MESH_ELEM(3,
-		     BT_MESH_MODEL_LIST(
-			     BT_MESH_MODEL_LVL_CLI(&buttons[2].client)),
-		     BT_MESH_MODEL_NONE),
-	BT_MESH_ELEM(4,
-		     BT_MESH_MODEL_LIST(
-			     BT_MESH_MODEL_LVL_CLI(&buttons[3].client)),
-		     BT_MESH_MODEL_NONE),
-	BT_MESH_ELEM(5,
-		     BT_MESH_MODEL_LIST(
-			     BT_MESH_MODEL_LVL_CLI(&buttons[4].client)),
-		     BT_MESH_MODEL_NONE),
-	BT_MESH_ELEM(6,
-		     BT_MESH_MODEL_LIST(
-			     BT_MESH_MODEL_LVL_CLI(&buttons[5].client)),
-		     BT_MESH_MODEL_NONE),
-	BT_MESH_ELEM(7,
-		     BT_MESH_MODEL_LIST(
-			     BT_MESH_MODEL_LVL_CLI(&buttons[6].client)),
-		     BT_MESH_MODEL_NONE),
-	BT_MESH_ELEM(8,
-		     BT_MESH_MODEL_LIST(
-			     BT_MESH_MODEL_LVL_CLI(&buttons[7].client)),
-		     BT_MESH_MODEL_NONE),
-	BT_MESH_ELEM(9,
-		     BT_MESH_MODEL_LIST(
-			     BT_MESH_MODEL_LVL_CLI(&buttons[8].client)),
-		     BT_MESH_MODEL_NONE),
-	BT_MESH_ELEM(10,
-		     BT_MESH_MODEL_LIST(
-			     BT_MESH_MODEL_LVL_CLI(&buttons[9].client)),
-		     BT_MESH_MODEL_NONE),
 
+
+// ******************************************************************************
+// ***************************** GUS model setup *******************************
+// ******************************************************************************
+
+struct state_cache {
+	uint16_t addr;
+	enum bt_mesh_gus_cli_state state;
+};
+
+
+//static struct state_cache state_cache[ STATE_CACHE_SIZE];
+
+
+//static bool address_is_local(struct bt_mesh_model *mod, uint16_t addr)
+//{
+//	return bt_mesh_model_elem(mod)->addr == addr;
+//}
+
+//static bool address_is_unicast(uint16_t addr)
+//{
+//	return (addr > 0) && (addr <= 0x7FFF);
+//}
+
+
+//static bool presence_cache_entry_check_and_update(uint16_t addr,
+//				       enum bt_mesh_chat_cli_presence presence)
+
+static void handle_gus_start(struct bt_mesh_gus_cli *gus)
+{
+    printk("started gus\n");
+	
+}
+
+static void handle_gus_set_state(struct bt_mesh_gus_cli *gus,
+				 struct bt_mesh_msg_ctx *ctx,
+				 enum bt_mesh_gus_cli_state state)
+{
+
+}
+
+
+static void handle_gus_sign_in_reply(struct bt_mesh_gus_cli *gus,
+				 struct bt_mesh_msg_ctx *ctx,
+				 const uint8_t *msg)
+{
+    gd_add_node(msg, ctx->addr, false, false, false);
+}
+
+
+static const struct bt_mesh_gus_cli_handlers gus_handlers = {
+	.start = handle_gus_start,
+	.set_state = handle_gus_set_state,
+        .sign_in_reply = handle_gus_sign_in_reply,
+};
+
+static struct bt_mesh_gus_cli gus = {
+	.handlers = &gus_handlers,
+};
+
+
+static struct bt_mesh_elem elements[] = {
+	BT_MESH_ELEM(
+		1,
+		BT_MESH_MODEL_LIST(
+			BT_MESH_MODEL_CFG_SRV,
+			BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub)),
+		BT_MESH_MODEL_LIST(BT_MESH_MODEL_GUS_CLI(&gus))),
 };
 
 static const struct bt_mesh_comp comp = {
@@ -205,44 +161,55 @@ static const struct bt_mesh_comp comp = {
 	.elem_count = ARRAY_SIZE(elements),
 };
 
-void model_handler_provision(void)
-{
-    char * names[] = {
-    "Alan",
-    "Ally", 
-    "Brenda",
-    "Bryan",
-    "Carol",
-    "Craig",
-    "Dalene",
-    "Darrell",
-    "Eric"
-    };
-    // Gus provisioning isn't working yet.  This function is a placeholder. 
-    // For now it just adds an entry in the gus data for each node. 
-    gd_init();
-    int index = 0;
-    for (int i=0; i<MAX_GUS_NODES; ++i) {
-        if (buttons[i].client.pub.addr != 0) {
-            gd_add_node(index, names[index], i, i==0, false, false);
-            ++index;
-        }
-    }
-}
 
-void model_handler_set_state(uint16_t index, gus_state_t state)
+
+
+
+void model_handler_set_state(uint16_t addr, enum bt_mesh_gus_cli_state state)
 {
-    struct bt_mesh_lvl_set set = {
-        .lvl = state,
-    };
     int err;
 
-    err = bt_mesh_lvl_cli_set(&buttons[index].client, NULL, &set, NULL);
+//    printk("identify %d\n", addr);
+
+    if (addr == 0) {
+        addr = 0xc000;   //todo
+    }
+
+    err = bt_mesh_gus_cli_state_set(&gus, addr, state);
     if (err) {
-        printk("identify %d failed %d\n", index, err);
+        printk("error set state %d %d failed %d\n", addr,state, err);
     }
 }
 
+
+
+void model_scan_for_badges(void)
+{
+    int err;
+    err = bt_mesh_gus_cli_sign_in(&gus);
+    if (err) {
+        printk("sign in failed %d\n", err);
+    }
+}
+
+void model_handler_provision(void)
+{
+    model_scan_for_badges();
+}
+
+void model_set_name(uint16_t addr, const uint8_t *name)
+{
+    int err;
+    err = bt_mesh_gus_cli_name_set(&gus, addr, name);
+    if (err) {
+        printk("set name %d %s failed %d\n", addr, name, err);
+    }
+}
+
+
+/******************************************************************************/
+/******************************** Public API **********************************/
+/******************************************************************************/
 const struct bt_mesh_comp *model_handler_init(void)
 {
 	static struct button_handler button_handler = {
@@ -254,3 +221,4 @@ const struct bt_mesh_comp *model_handler_init(void)
 
 	return &comp;
 }
+
