@@ -311,6 +311,7 @@ static void btn_scan_event_cb(lv_obj_t * obj, lv_event_t event)
                 m_gui_event.evt_type = GUI_EVT_IDENTIFY;
                 m_gui_event.addr = selected_address();
                 m_gui_callback(&m_gui_event);
+                printk("%d\n", m_gui_event.addr);
         } 
     }   
 }

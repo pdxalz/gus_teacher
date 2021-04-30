@@ -144,7 +144,13 @@ static void handle_gus_report_reply(struct bt_mesh_gus_cli *gus,
 				 struct bt_mesh_msg_ctx *ctx,
 				 const uint8_t *msg)
 {
-    printk("report received %d %d %d\n", msg[0], msg[1], msg[2]);
+    struct gus_report_data * dd = (struct gus_report_data *)msg;
+    printk("rttl: %d\n", ctx->recv_ttl);
+    for (int i=0; i<NUM_PROXIMITY_REPORTS; i+=2) {
+        printk("rr (%d %d) (%d %d)\n", 
+                                        (int)dd[i+0].addr, (int)dd[i+0].rssi,
+                                        (int)dd[i+1].addr, (int)dd[i+1].rssi);
+    }
 }
 
 
