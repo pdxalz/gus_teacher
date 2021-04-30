@@ -347,8 +347,9 @@ static void badges_create(lv_obj_t* parent)
     lv_roller_set_align(roller, LV_LABEL_ALIGN_LEFT);
     lv_obj_set_style_local_value_str(roller, LV_CONT_PART_MAIN, LV_STATE_DEFAULT, "Roller");
     lv_roller_set_auto_fit(roller, false);
-    lv_roller_set_visible_row_count(roller, 6);
+    lv_roller_set_visible_row_count(roller, 7);
     lv_obj_set_width(roller, 88);
+    lv_obj_set_height(roller, 230);
     lv_obj_set_pos(roller, 2, 5);
     lv_obj_set_event_cb(roller, roller_event_cb);
 

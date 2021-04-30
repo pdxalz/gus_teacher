@@ -1,5 +1,6 @@
 #include <zephyr.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "gus_config.h"
 #include "gus_data.h"
@@ -166,6 +167,13 @@ void gd_init(void)
     init_sim_settings();
 }
 
+
+int cmpfunc (const void * a, const void * b) 
+{
+    return strcmp(((struct gus_node * )a)->name,((struct gus_node *)b)->name);
+//   return ( *(int*)a - *(int*)b );
+}
+
 void gd_add_node(const char * name, uint16_t addr, bool patient_zero, bool mask, bool vaccine)
 {
     int i;
@@ -191,6 +199,7 @@ void gd_add_node(const char * name, uint16_t addr, bool patient_zero, bool mask,
     gus_nodes[i].mask = mask;
     gus_nodes[i].vaccine = vaccine;
 
+    qsort(gus_nodes, node_count, sizeof(struct gus_node), cmpfunc);
     gui_update_namelist();
 }
 
@@ -221,7 +230,7 @@ void gd_get_namelist(char * buf, int length)
 {
     int pos = 0;
     buf[0] = '\0';
-    for (int i=0; i<MAX_GUS_NODES; ++i) {
+    for (int i=0; i<node_count && i<MAX_GUS_NODES; ++i) {
         if (gus_nodes[i].addr == 0) {
             break;
         }
@@ -233,9 +242,11 @@ void gd_get_namelist(char * buf, int length)
         pos = strlen(buf);
         __ASSERT_NO_MSG(pos < length);
 
-        strncpy(&buf[pos], "\n", length - pos); 
-        pos = strlen(buf);
-        __ASSERT_NO_MSG(pos < length);
+        if (i != node_count-1) {
+            strncpy(&buf[pos], "\n", length - pos); 
+            pos = strlen(buf);
+            __ASSERT_NO_MSG(pos < length);
+        }
     }
 }
 
