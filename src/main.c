@@ -63,6 +63,9 @@ void on_gui_event(gui_event_t *event)
             case GUI_EVT_IDENTIFY:
                     model_handler_set_state(event->addr, BT_MESH_GUS_CLI_IDENTIFY);
                     break;
+            case GUI_EVT_RECORD:
+                    model_report_request(event->addr);
+                    break;
     }
 }
 

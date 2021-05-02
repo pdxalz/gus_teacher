@@ -3,7 +3,7 @@
 
 #include <zephyr.h>
 
-typedef enum {GUI_EVT_SCAN, GUI_EVT_IDENTIFY} gui_event_type_t;
+typedef enum {GUI_EVT_SCAN, GUI_EVT_IDENTIFY, GUI_EVT_RECORD} gui_event_type_t;
 
 typedef struct
 {
