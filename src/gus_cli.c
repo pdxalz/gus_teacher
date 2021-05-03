@@ -377,7 +377,6 @@ int bt_mesh_gus_cli_report_reply(struct bt_mesh_gus_cli *gus,
 
 int bt_mesh_gus_cli_check_proximity(struct bt_mesh_gus_cli *gus)
 {
-//todo set ttl to 0
 
 //todo	set_tx_power(BT_HCI_VS_LL_HANDLE_TYPE_ADV, 0, -8);
 

@@ -3,17 +3,23 @@
 
 #include <zephyr.h>
 
-typedef enum {SIM_MSG_RESTART, SIM_MSG_NEXT} sim_msg_type_t;
+typedef enum {SIM_MSG_RESTART, SIM_MSG_NEXT, SIM_MSG_ADD_CONTACT} sim_msg_type_t;
 
 typedef struct
 {
 	sim_msg_type_t type;
 	void *p_data;
-	struct // union 
+	union 
 	{
+            struct  {
 		uint8_t rows;
 		uint8_t space;
                 uint8_t rate;
+                };
+            struct {
+                uint16_t addr;
+                int8_t rssi;
+                }
 	} params;
 } sim_message_t;
 

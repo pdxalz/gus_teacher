@@ -141,6 +141,10 @@ static void process_sim_msg_queue(void)
             case SIM_MSG_NEXT:
                 next_analysis_point();
                 break;
+            case SIM_MSG_ADD_CONTACT:
+                add_contact(sim_message.params.addr, 0, sim_message.params.rssi,0,0.0);
+                break;
+               
         }
     }
 }
