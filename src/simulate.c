@@ -2,18 +2,19 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "model_handler.h"
 #include "simulate.h"
 #include "contacts.h"
 #include "gus_config.h"
 #include "gus_data.h"
 #include "gui.h"
-
+#include "contacts.h"
 
 // Create a message queue for handling external GUI commands
 K_MSGQ_DEFINE(m_sim_cmd_queue, sizeof(sim_message_t), 8, 4);
 
 const int step_interval = 60;  // 1 minute intervals
-static uint16_t time;
+static uint16_t step_time;
 static uint8_t  rate;
 static uint16_t time_of_last_exposure;
 static uint16_t time_to_complete;
@@ -77,14 +78,14 @@ void print_infections(void)
 
 static void calc_time_to_complete(void)
 {
-    time=0;
+    step_time=0;
     reset_exposures(false);
     
-    while (time < final_time() && !everyone_infected()) {     
-        calculate_exposures(time, time + step_interval, false);
-         time += step_interval;
+    while (step_time < final_time() && !everyone_infected()) {     
+        calculate_exposures(step_time, step_time + step_interval, false);
+         step_time += step_interval;
     }
-    time_to_complete = time;
+    time_to_complete = step_time;
 }
 
 static void restart_sim( uint8_t rows, uint8_t space)
@@ -93,19 +94,19 @@ static void restart_sim( uint8_t rows, uint8_t space)
     simulate_contacts(rows, space);
     calc_time_to_complete();
     reset_exposures(true);
-    time = 0;
+    step_time = 0;
     gui_update_progress(0, 0);
 }
 
 static void next_analysis_point(void)
 {
-    calculate_exposures(time, time + step_interval, true);
+    calculate_exposures(step_time, step_time + step_interval, true);
     print_infections();
-    time += step_interval;   
+    step_time += step_interval;   
     
-    printk("exposure: %d %d %d %d \n", time, get_exposure(1), get_exposure(2), get_exposure(3));
-    uint8_t progress = MIN(100, time * 100 / time_to_complete);
-    gui_update_progress(progress, time);
+    printk("exposure: %d %d %d %d \n", step_time, get_exposure(1), get_exposure(2), get_exposure(3));
+    uint8_t progress = MIN(100, step_time * 100 / time_to_complete);
+    gui_update_progress(progress, step_time);
 }
 
 
@@ -127,6 +128,18 @@ void sim_msg_next(void)
     k_msgq_put(&m_sim_cmd_queue, &msg, K_NO_WAIT);
 }
 
+void sim_msg_add_contact(uint16_t badgeA, uint16_t badgeB, int8_t rssi)
+{
+    static sim_message_t msg;
+    msg.type = SIM_MSG_ADD_CONTACT;
+    msg.params.badgeA = badgeA;
+    msg.params.badgeB = badgeB;
+    msg.params.rssi = rssi;
+
+    k_msgq_put(&m_sim_cmd_queue, &msg, K_NO_WAIT);
+}
+
+
 
 static void process_sim_msg_queue(void)
 {
@@ -142,7 +155,9 @@ static void process_sim_msg_queue(void)
                 next_analysis_point();
                 break;
             case SIM_MSG_ADD_CONTACT:
-                add_contact(sim_message.params.addr, 0, sim_message.params.rssi,0,0.0);
+                add_proximity_contact(sim_message.params.badgeA,
+                                 sim_message.params.badgeB,
+                                 sim_message.params.rssi);
                 break;
                
         }

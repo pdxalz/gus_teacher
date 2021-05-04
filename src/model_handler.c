@@ -19,7 +19,7 @@
 #include "gus_config.h"
 #include "gus_data.h"
 #include "gus_cli.h"
-
+#include "simulate.h"
 
 #define STATE_CACHE_SIZE 10
 
@@ -145,11 +145,16 @@ static void handle_gus_report_reply(struct bt_mesh_gus_cli *gus,
 				 const uint8_t *msg)
 {
     struct gus_report_data * dd = (struct gus_report_data *)msg;
-    printk("rttl: %d\n", ctx->recv_ttl);
-    for (int i=0; i<NUM_PROXIMITY_REPORTS; i+=2) {
-        printk("rr (%d %d) (%d %d)\n", 
-                                        (int)dd[i+0].addr, (int)dd[i+0].rssi,
-                                        (int)dd[i+1].addr, (int)dd[i+1].rssi);
+    uint16_t badgeA = ctx->addr;
+    for (int i=0; i<NUM_PROXIMITY_REPORTS; ++i) {
+        uint16_t badgeB = dd[i+0].addr;
+        int8_t rssi = dd[i+0].rssi;
+
+        if (rssi > -90) {
+            sim_msg_add_contact(badgeA, badgeB, rssi);
+        }
+
+//        printk("rr (%d %d))\n", (int)dd[i+0].addr, (int)dd[i+0].rssi );
     }
 }
 
@@ -230,7 +235,7 @@ void model_report_request(uint16_t addr)
 {
     int err;
     
-    printk("requesting report %d\n", addr);
+//    printk("requesting report %d\n", addr);
 
     err = bt_mesh_gus_cli_report_request(&gus, addr);
     if (err) {

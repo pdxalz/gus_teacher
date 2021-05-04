@@ -13,6 +13,7 @@
 
 const uint8_t safe_distance = 100;
 const uint16_t create_interval = (1*60*10);  //todo 
+static uint32_t prox_start_time;
 
 struct contact {
     uint8_t     badgeA;
@@ -112,5 +113,23 @@ void simulate_contacts(uint8_t rows, uint8_t space)
     _final_time = time;
 }
 
+void reset_proximity_contacts(void)
+{
+    prox_start_time = k_uptime_get_32();
+    _total_contacts = 0;
+}
 
+#define RSSI_TUNE_CONSTANT 80
+void add_proximity_contact(uint16_t badgeA, uint16_t badgeB, int8_t rssi)
+{
+    // time in seconds proximity checks were restarted
+    uint32_t current_time = (k_uptime_get_32() - prox_start_time) / 1000;
+    uint32_t interval = gd_get_node_count();
+
+    if (rssi > -RSSI_TUNE_CONSTANT) {
+        double distance = (rssi + RSSI_TUNE_CONSTANT) * 2.0;
+        add_contact(badgeA, badgeB, current_time, current_time+interval, distance);
+        printk("contact %d-%d: %d\n", badgeA, badgeB, (rssi + RSSI_TUNE_CONSTANT)*2);
+    }
+}
 

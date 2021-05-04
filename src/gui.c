@@ -44,8 +44,8 @@ static void keyboard_create(lv_obj_t* parent);
 /**********************
  *  STATIC VARIABLES
  **********************/
-char namelist[NAMELIST_LEN];
- 
+static char namelist[NAMELIST_LEN];
+static uint16_t _proximity_check=0;
 static gui_event_t m_gui_event;
 static gui_callback_t m_gui_callback = 0;
 // Create a message queue for handling external GUI commands
@@ -54,7 +54,7 @@ K_MSGQ_DEFINE(m_gui_cmd_queue, sizeof(gui_message_t), 8, 4);
 
 
 static lv_style_t style_box;
-//static lv_style_t style_tab;
+
 
 
 // mode controls
@@ -110,7 +110,7 @@ enum gus_mode { mode_badge, mode_config, mode_analyze, mode_edit_name} gus_mode;
  *      MACROS
  **********************/
 #define PLAY_TIMER_VALUE K_SECONDS(2)
-#define RECORD_TIMER_VALUE K_SECONDS(1)
+#define RECORD_TIMER_VALUE K_SECONDS(5)
 
 extern void play_expiry_function(struct k_timer *timer_id);
 extern void record_expiry_function(struct k_timer *timer_id);
@@ -167,10 +167,10 @@ void play_expiry_function(struct k_timer *timer_id)
 void record_expiry_function(struct k_timer *timer_id)
 {
     if (lv_bar_get_value(bar) < 100) {
-        if(m_gui_callback) { 
+        if(m_gui_callback) {
+                _proximity_check = _proximity_check % gd_get_node_count();
+                m_gui_event.addr = get_address(_proximity_check++);
                 m_gui_event.evt_type = GUI_EVT_RECORD;
-//todo: step through addresses                
-m_gui_event.addr = 12;
                 m_gui_callback(&m_gui_event);
                 printk("record %d\n", m_gui_event.addr);
                 k_timer_start(&record_timer, RECORD_TIMER_VALUE, K_NO_WAIT );
