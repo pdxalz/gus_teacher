@@ -38,10 +38,6 @@ typedef struct
 // config : event callback function
 void gui_init(gui_config_t * config);
 
-// Get the address of the currently selected badge
-// returns : node address of badge
-uint16_t gui_get_selected_addr(void);
-
 // Add a GUI message to reload the scroller namelist control
 void gui_update_namelist(void);
 

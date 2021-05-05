@@ -98,7 +98,7 @@ BT_MESH_HEALTH_PUB_DEFINE(health_pub, 0);
 
 struct state_cache {
 	uint16_t addr;
-	enum bt_mesh_gus_cli_state state;
+	enum bt_mesh_gus_state state;
 };
 
 
@@ -127,7 +127,7 @@ static void handle_gus_start(struct bt_mesh_gus_cli *gus)
 
 static void handle_gus_set_state(struct bt_mesh_gus_cli *gus,
 				 struct bt_mesh_msg_ctx *ctx,
-				 enum bt_mesh_gus_cli_state state)
+				 enum bt_mesh_gus_state state)
 {
 
 }
@@ -159,14 +159,14 @@ static void handle_gus_report_reply(struct bt_mesh_gus_cli *gus,
 }
 
 
-static const struct bt_mesh_gus_cli_handlers gus_handlers = {
+static const struct bt_mesh_gus_handlers gus_handlers = {
 	.start = handle_gus_start,
 	.set_state = handle_gus_set_state,
         .sign_in_reply = handle_gus_sign_in_reply,
         .report_reply = handle_gus_report_reply,
 };
 
-static struct bt_mesh_gus_cli gus = {
+static struct bt_mesh_gus gus = {
 	.handlers = &gus_handlers,
 };
 
@@ -190,7 +190,7 @@ static const struct bt_mesh_comp comp = {
 
 
 
-void model_handler_set_state(uint16_t addr, enum bt_mesh_gus_cli_state state)
+void model_handler_set_state(uint16_t addr, enum bt_mesh_gus_state state)
 {
     int err;
 

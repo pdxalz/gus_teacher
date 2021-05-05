@@ -29,29 +29,21 @@ uint16_t node_count;
 
 static void update_node_health_state(uint8_t index, bool initializing)
 {
-    enum bt_mesh_gus_cli_state state = BT_MESH_GUS_CLI_HEALTHY;
-
-    //if (get_infected(index)) {
-    //    state = BT_MESH_GUS_CLI_INFECTED;
-    //} else if (has_mask(index)) {
-    //    state = BT_MESH_GUS_CLI_MASKED;        
-    //} else if (has_vaccine(index)) {
-    //    state = BT_MESH_GUS_CLI_VACCINATED;        
-    //}
+    enum bt_mesh_gus_state state = BT_MESH_GUS_HEALTHY;
 
     state = has_vaccine(index) ? 
                 (has_mask(index) ? 
-                    (get_infected(index) ? BT_MESH_GUS_CLI_VACCINATED_MASKED_INFECTED
-                                         : BT_MESH_GUS_CLI_VACCINATED_MASKED) :
-                    (get_infected(index) ? BT_MESH_GUS_CLI_VACCINATED_INFECTED
-                                         : BT_MESH_GUS_CLI_VACCINATED) ) :
+                    (get_infected(index) ? BT_MESH_GUS_VACCINATED_MASKED_INFECTED
+                                         : BT_MESH_GUS_VACCINATED_MASKED) :
+                    (get_infected(index) ? BT_MESH_GUS_VACCINATED_INFECTED
+                                         : BT_MESH_GUS_VACCINATED) ) :
                 (has_mask(index) ? 
-                    (get_infected(index) ? BT_MESH_GUS_CLI_MASKED_INFECTED
-                                         : BT_MESH_GUS_CLI_MASKED) :
-                    (get_infected(index) ? BT_MESH_GUS_CLI_INFECTED
-                                         : BT_MESH_GUS_CLI_HEALTHY) );
+                    (get_infected(index) ? BT_MESH_GUS_MASKED_INFECTED
+                                         : BT_MESH_GUS_MASKED) :
+                    (get_infected(index) ? BT_MESH_GUS_INFECTED
+                                         : BT_MESH_GUS_HEALTHY) );
                        
-    if (initializing && (state == BT_MESH_GUS_CLI_HEALTHY)) {
+    if (initializing && (state == BT_MESH_GUS_HEALTHY)) {
         return;
     }
     printk("update node %d %d %d\n", index, state, initializing);
@@ -260,7 +252,7 @@ void reset_exposures(bool update)
 {
     // publish health to all
     if (update) {
-        model_handler_set_state(0, BT_MESH_GUS_CLI_HEALTHY);
+        model_handler_set_state(0, BT_MESH_GUS_HEALTHY);
     }
 
     for (int i=0; i < gd_get_node_count(); ++i) {
