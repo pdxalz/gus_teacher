@@ -51,7 +51,7 @@ static void attention_off(struct bt_mesh_model *mod)
 	dk_set_leds(DK_NO_LEDS_MSK);
 }
 
-uint16_t gui_get_selected_addr(void);
+
 static void button_handler_cb(uint32_t pressed, uint32_t changed)
 {
     if ((pressed & changed & BIT(0)))

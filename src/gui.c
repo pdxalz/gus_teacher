@@ -19,10 +19,6 @@ const struct device *display_dev;
   *********************/
 #define NAMELIST_LEN (MAX_GUS_NODES * (MAX_NAME_LENGTH+3))
 
-  /**********************
-   *      TYPEDEFS
-   **********************/
-
    /**********************
     *  STATIC PROTOTYPES
     **********************/
@@ -33,8 +29,6 @@ static void configure_create(lv_obj_t* parent);
 static void analysis_create(lv_obj_t* parent);
 static void ta_event_cb(lv_obj_t* ta, lv_event_t e);
 static void kb_event_cb(lv_obj_t* ta, lv_event_t e);
-//static void bar_anim(lv_task_t* t);
-
 static void btn_badge_event_cb(lv_obj_t* btn, lv_event_t e);
 static void btn_config_event_cb(lv_obj_t* btn, lv_event_t e);
 static void btn_analyze_event_cb(lv_obj_t* btn, lv_event_t e);
@@ -44,7 +38,7 @@ static void keyboard_create(lv_obj_t* parent);
 /**********************
  *  STATIC VARIABLES
  **********************/
-static char namelist[NAMELIST_LEN];
+static char _namelist[NAMELIST_LEN];
 static uint16_t _proximity_check=0;
 static gui_event_t m_gui_event;
 static gui_callback_t m_gui_callback = 0;
@@ -282,8 +276,8 @@ void update_checkboxes(void)
 static void update_namelist(void) 
 {
     int item = lv_roller_get_selected(roller);
-    gd_get_namelist(namelist, NAMELIST_LEN);
-    lv_roller_set_options(roller, namelist, LV_ROLLER_MODE_NORMAL);
+    gd_get_namelist(_namelist, NAMELIST_LEN);
+    lv_roller_set_options(roller, _namelist, LV_ROLLER_MODE_NORMAL);
     lv_roller_set_selected(roller, item, LV_ANIM_OFF);
 }
 
@@ -345,7 +339,6 @@ static void restart_simulation(void)
             uint8_t rows = lv_spinbox_get_value(spinbox_rows);
             uint8_t space = lv_spinbox_get_value(spinbox_space);
             uint8_t rate = lv_spinbox_get_value(spinbox_rate);
-//            printk("rsr %d %d %d", rows, space, rate);
             sim_msg_restart(rows, space, rate);
 }
 
@@ -481,7 +474,7 @@ static void configure_create(lv_obj_t* parent)
 
     dd = lv_dropdown_create(parent, NULL);
     lv_obj_set_style_local_value_str(dd, LV_CONT_PART_MAIN, LV_STATE_DEFAULT, "Dropdown");
-    lv_dropdown_set_options(dd, " Simulate\n Proximity");
+    lv_dropdown_set_options(dd, " Classroom\n GUS Tag");
     lv_obj_set_pos(dd, 110, 20 + zoff);
 
     // rows spinner
