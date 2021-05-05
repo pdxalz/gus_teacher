@@ -43,19 +43,6 @@ static const uint8_t *extract_name(struct net_buf_simple *buf)
 // message handlers
 ///////////////////
 
-static void handle_sign_in(struct bt_mesh_model *model,
-				 struct bt_mesh_msg_ctx *ctx,
-				 struct net_buf_simple *buf)
-{
-
-	struct bt_mesh_gus *gus = model->user_data;
-
-        uint16_t addr = bt_mesh_model_elem(model)->addr;
-	if (gus->handlers->sign_in) {
-		gus->handlers->sign_in(gus, ctx, addr);
-	}
-}
-
 static void handle_sign_in_reply(struct bt_mesh_model *model,
 			   struct bt_mesh_msg_ctx *ctx,
 			   struct net_buf_simple *buf)
@@ -69,50 +56,6 @@ static void handle_sign_in_reply(struct bt_mesh_model *model,
 		gus->handlers->sign_in_reply(gus, ctx, name);
 	}
 }
-
-
-static void handle_set_state(struct bt_mesh_model *model,
-			    struct bt_mesh_msg_ctx *ctx,
-			    struct net_buf_simple *buf)
-{
-    struct bt_mesh_gus *gus = model->user_data;
-    enum bt_mesh_gus_state state;
-
-    state = net_buf_simple_pull_u8(buf);
-
-    if (gus->handlers->set_state) {
-            gus->handlers->set_state(gus, ctx, state);
-    }
-}
-
-
-static void handle_set_name(struct bt_mesh_model *model,
-				  struct bt_mesh_msg_ctx *ctx,
-				  struct net_buf_simple *buf)
-{
-	struct bt_mesh_gus *gus = model->user_data;
-	const uint8_t *msg;
-
-	msg = extract_name(buf);
-
-        strncpy(gus->name, msg, CONFIG_BT_MESH_GUS_NAME_LENGTH);
-	if (gus->handlers->set_name) {
-		gus->handlers->set_name(gus, ctx, msg);
-	}
-}
-
-
-static void handle_report_request(struct bt_mesh_model *model,
-				 struct bt_mesh_msg_ctx *ctx,
-				 struct net_buf_simple *buf)
-{
-	struct bt_mesh_gus *gus = model->user_data;
-
-	if (gus->handlers->report_request) {
-		gus->handlers->report_request(gus, ctx);
-	}
-}
-
 
 static void handle_report_reply(struct bt_mesh_model *model,
 				  struct bt_mesh_msg_ctx *ctx,
@@ -128,19 +71,6 @@ static void handle_report_reply(struct bt_mesh_model *model,
 	}
 }
 
-
-static void handle_check_proximity(struct bt_mesh_model *model,
-				 struct bt_mesh_msg_ctx *ctx,
-				 struct net_buf_simple *buf)
-{
-	struct bt_mesh_gus *gus = model->user_data;
-    uint16_t addr = bt_mesh_model_elem(model)->addr;
-
-	if (gus->handlers->check_proximity) {
-		gus->handlers->check_proximity(gus, ctx, addr);
-	}
-}
-
 ////////////////////
 // message handler table
 ///////////////////
@@ -148,41 +78,15 @@ static void handle_check_proximity(struct bt_mesh_model *model,
 
 const struct bt_mesh_model_op _bt_mesh_gus_cli_op[] = {
 	{
-		BT_MESH_GUS_OP_SIGN_IN,
-		BT_MESH_GUS_MSG_LEN_REQUEST,
-		handle_sign_in
-	},
-	{
 		BT_MESH_GUS_OP_SIGN_IN_REPLY,
 		BT_MESH_GUS_MSG_MINLEN_MESSAGE,
 		handle_sign_in_reply
-	},
-	{
-		BT_MESH_GUS_OP_SET_STATE,
-		BT_MESH_GUS_MSG_MINLEN_MESSAGE,
-		handle_set_state
-	},
-	{
-		BT_MESH_GUS_OP_SET_NAME,
-		BT_MESH_GUS_MSG_MINLEN_MESSAGE,
-		handle_set_name
-	},
-	{
-		BT_MESH_GUS_OP_REPORT,
-		BT_MESH_GUS_MSG_LEN_REQUEST,
-		handle_report_request
 	},
 	{
 		BT_MESH_GUS_OP_REPORT_REPLY,
 		BT_MESH_GUS_MSG_MINLEN_MESSAGE,
 		handle_report_reply
 	},
-	{
-		BT_MESH_GUS_OP_CHECK_PROXIMITY,
-		BT_MESH_GUS_MSG_LEN_REQUEST,
-		handle_check_proximity
-	},
-
 	BT_MESH_MODEL_OP_END,
 };
 

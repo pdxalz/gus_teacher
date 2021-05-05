@@ -20,6 +20,7 @@
 #include "gus_data.h"
 #include "gus_cli.h"
 #include "simulate.h"
+#include "gui.h"
 
 #define STATE_CACHE_SIZE 10
 
@@ -119,28 +120,20 @@ struct state_cache {
 //static bool presence_cache_entry_check_and_update(uint16_t addr,
 //				       enum bt_mesh_chat_cli_presence presence)
 
-static void handle_gus_start(struct bt_mesh_gus_cli *gus)
+static void handle_gus_start(struct bt_mesh_gus *gus)
 {
     printk("started gus\n");
 	
 }
 
-static void handle_gus_set_state(struct bt_mesh_gus_cli *gus,
-				 struct bt_mesh_msg_ctx *ctx,
-				 enum bt_mesh_gus_state state)
-{
-
-}
-
-
-static void handle_gus_sign_in_reply(struct bt_mesh_gus_cli *gus,
+static void handle_gus_sign_in_reply(struct bt_mesh_gus *gus,
 				 struct bt_mesh_msg_ctx *ctx,
 				 const uint8_t *msg)
 {
     gd_add_node(msg, ctx->addr, false, false, false);
 }
 
-static void handle_gus_report_reply(struct bt_mesh_gus_cli *gus,
+static void handle_gus_report_reply(struct bt_mesh_gus *gus,
 				 struct bt_mesh_msg_ctx *ctx,
 				 const uint8_t *msg)
 {
@@ -161,7 +154,6 @@ static void handle_gus_report_reply(struct bt_mesh_gus_cli *gus,
 
 static const struct bt_mesh_gus_handlers gus_handlers = {
 	.start = handle_gus_start,
-	.set_state = handle_gus_set_state,
         .sign_in_reply = handle_gus_sign_in_reply,
         .report_reply = handle_gus_report_reply,
 };
