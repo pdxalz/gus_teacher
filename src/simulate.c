@@ -18,7 +18,7 @@ static uint16_t step_time;
 static uint8_t  rate = 4;
 static uint16_t time_of_last_exposure;
 static uint16_t time_to_complete;
-
+static uint16_t _current_step_index;
 
 static uint32_t exposed_in_period(int index, uint16_t t0, uint16_t t1) 
 {
@@ -39,7 +39,7 @@ static void add_exposure(int index, uint32_t exposure, bool update)
 {
     int badgeA = get_contact_badgeA(index);
     int badgeB = get_contact_badgeB(index);
-
+printk("add ex: %d %d %d\n", badgeA, badgeB, exposure);
     // if either but not both infected, add the exposure to the non-infected
     if (!get_infected(badgeA) && get_infected(badgeB)) {
         exposure /= (has_mask(badgeA) ? 3 : 1);
@@ -93,8 +93,29 @@ static void calc_time_to_complete(void)
     time_to_complete = step_time;
 }
 
+
+#define RECORDS_PER_STEP 2
+
+static void apply_infections_next_step(void)
+{
+    for (int i=0; i<RECORDS_PER_STEP; ++i)
+    {
+        if (_current_step_index >= get_total_contacts()) {
+            break;
+        }
+        uint32_t exposure = 100000 / get_distance_squared(_current_step_index);
+        printk("e-> %d  %d\n", _current_step_index, exposure);
+        add_exposure(_current_step_index, exposure, true);
+        ++_current_step_index;
+    printk("exposure: %d %d %d %d \n", _current_step_index, get_exposure(1), get_exposure(2), get_exposure(3));
+
+
+    }
+}
+
 static void rewind_sim(void)
 {
+    _current_step_index = 0;
     time_to_complete = final_time();
     printk("complete: %d\n", time_to_complete);
     reset_exposures(true);
@@ -176,7 +197,14 @@ static void process_sim_msg_queue(void)
                 }
                 break;
             case SIM_MSG_NEXT:
-                next_analysis_point();
+                if (sim_message.params.tag_mode) {
+                    apply_infections_next_step();
+                }
+                else
+                {
+                    next_analysis_point();
+                }
+
                 break;
             case SIM_MSG_ADD_CONTACT:
                 add_proximity_contact(sim_message.params.badgeA,
@@ -191,7 +219,6 @@ static void process_sim_msg_queue(void)
 
 static void sim_run(void)
 {
-
 	while(1){
 		process_sim_msg_queue();
 		k_sleep(K_MSEC(20));
