@@ -24,8 +24,11 @@ static uint32_t exposed_in_period(int index, uint16_t t0, uint16_t t1)
 {
     t0 = MAX(t0, get_start_time(index));
     t1 = MIN(t1, get_end_time(index));
-//printk("exposed: %d %d %d\n", t0, t1, get_distance_squared(index));
-    return (t0 < t1 ) ? (t1-t0) * 1000 / get_distance_squared(index) : 0;
+    uint32_t exposure = (t1-t0) * 1000 / get_distance_squared(index);
+    printk("exposed: %d %d %d\n", t0, t1, get_distance_squared(index));
+    k_sleep(K_MSEC(50));
+
+    return (t0 < t1 ) ? exposure : 0;
 }
 
 // Adds to the exposure of a healthy badge if they are exposed to the infection.
@@ -73,6 +76,7 @@ void print_infections(void)
             printk(" %s,", get_name(i));
         }
     }
+    printk("\n");
 }
 
 
@@ -94,7 +98,7 @@ static void rewind_sim(void)
     time_to_complete = final_time();
     printk("complete: %d\n", time_to_complete);
     reset_exposures(true);
-    step_time = 0;
+    step_time = get_start_time(0);
     gui_update_progress(0, 0);    
 }
 

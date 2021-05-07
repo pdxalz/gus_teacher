@@ -157,6 +157,11 @@ void play_expiry_function(struct k_timer *timer_id)
     }
 }
 
+static void stop_playback(void)
+{
+    k_timer_stop(&play_timer);
+}
+
 static void stop_recording(void)
 {
     lv_btn_set_state(btn_record, LV_BTN_STATE_RELEASED);
@@ -354,6 +359,7 @@ static void btn_playback_event_cb(lv_obj_t *obj, lv_event_t event)
     {
         if (obj == btn_rew)
         {
+            stop_playback();
             stop_recording();
             restart_simulation();
         }
@@ -365,6 +371,7 @@ static void btn_playback_event_cb(lv_obj_t *obj, lv_event_t event)
         }
         else if (obj == btn_next)
         {
+            stop_playback();
             stop_recording();
             sim_msg_next(proximityMode());
         }
@@ -373,6 +380,7 @@ static void btn_playback_event_cb(lv_obj_t *obj, lv_event_t event)
     {
         if (obj == btn_record)
         {
+            stop_playback();
             if (lv_btn_get_state(btn_record) == LV_BTN_STATE_CHECKED_RELEASED)
             {
                 reset_proximity_contacts();
@@ -721,6 +729,7 @@ static void btn_badge_event_cb(lv_obj_t *btn, lv_event_t e)
 {
     if (e == LV_EVENT_CLICKED)
     {
+        stop_playback();
         stop_recording();
         gus_mode = mode_badge;
         model_handler_set_state(0, BT_MESH_GUS_OFF);
@@ -732,6 +741,7 @@ static void btn_config_event_cb(lv_obj_t *btn, lv_event_t e)
 {
     if (e == LV_EVENT_CLICKED)
     {
+        stop_playback();
         stop_recording();
         gus_mode = mode_config;
         model_handler_set_state(0, BT_MESH_GUS_OFF);
@@ -745,6 +755,7 @@ static void btn_analyze_event_cb(lv_obj_t *btn, lv_event_t e)
     if (e == LV_EVENT_CLICKED)
     {
         gus_mode = mode_analyze;
+        stop_playback();
         restart_simulation();
         update_control_visibility();
     }

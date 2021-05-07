@@ -51,8 +51,8 @@ void reset_proximity_contacts(void);
 
 // Adds a new contact between two badges.  The distance is calculated based on
 // the rssi value
-// badgeA : node address of the first badge
-// badgeB : node address of the second badge
-void add_proximity_contact(uint16_t badgeA, uint16_t badgeB, int8_t rssi);
+// addr1 : node address of the first badge
+// addr2 : node address of the second badge
+void add_proximity_contact(uint16_t addr1, uint16_t addr2, int8_t rssi);
 
 #endif /* CONTACTS_H_ */

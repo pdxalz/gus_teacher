@@ -208,6 +208,17 @@ void set_name(int index, const char * name)
 }
 
 
+uint16_t get_badge_from_address(uint16_t addr)
+{
+    for (int i=0; i<node_count; ++i) {
+        if (addr == gus_nodes[i].addr) {
+            return i;
+        }
+    }
+    __ASSERT_NO_MSG(1);
+    return 0;
+}
+
 bool everyone_infected(void) {
     for (int i=0; i<node_count; ++i) {
         if (!gus_nodes[i].infected) {

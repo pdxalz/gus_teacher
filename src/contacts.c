@@ -141,12 +141,14 @@ printk("reset prox contacts\n");
 }
 
 
-void add_proximity_contact(uint16_t badgeA, uint16_t badgeB, int8_t rssi)
+void add_proximity_contact(uint16_t addr1, uint16_t addr2, int8_t rssi)
 {
     // time in seconds since proximity checks were restarted
     uint32_t current_time = (k_uptime_get_32() - prox_start_time) / 1000;
     uint32_t interval = gd_get_node_count();
 
+    uint16_t badgeA = get_badge_from_address(addr1);
+    uint16_t badgeB = get_badge_from_address(addr2);
     if (rssi > -RSSI_TUNE_CONSTANT)
     {
         current_time *= DEMO_VIDEO_ACCEL;
