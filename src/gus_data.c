@@ -250,15 +250,17 @@ uint16_t gd_get_node_count(void)
 
 void reset_exposures(bool update)
 {
+
     // publish health to all
     if (update) {
         model_handler_set_state(0, BT_MESH_GUS_HEALTHY);
     }
-
+printk("All green\n");
     for (int i=0; i < gd_get_node_count(); ++i) {
         set_exposure(i, 0);
         set_infected(i, is_patient_zero(i));
         if (update) {
+printk("patient zero %d\n", i);
             update_node_health_state(i, true);
         }
     }

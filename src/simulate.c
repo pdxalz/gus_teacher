@@ -15,7 +15,7 @@ K_MSGQ_DEFINE(m_sim_cmd_queue, sizeof(sim_message_t), 8, 4);
 
 const int step_interval = 60;  // 1 minute intervals
 static uint16_t step_time;
-static uint8_t  rate;
+static uint8_t  rate = 4;
 static uint16_t time_of_last_exposure;
 static uint16_t time_to_complete;
 
@@ -24,7 +24,7 @@ static uint32_t exposed_in_period(int index, uint16_t t0, uint16_t t1)
 {
     t0 = MAX(t0, get_start_time(index));
     t1 = MIN(t1, get_end_time(index));
-
+//printk("exposed: %d %d %d\n", t0, t1, get_distance_squared(index));
     return (t0 < t1 ) ? (t1-t0) * 1000 / get_distance_squared(index) : 0;
 }
 
@@ -55,6 +55,7 @@ static void add_exposure(int index, uint32_t exposure, bool update)
 
 static void calculate_exposures(uint16_t t0, uint16_t t1, bool update) 
 {
+//printk("calc exp: total=%d\n, ", get_total_contacts());
     time_of_last_exposure = 0;
     for (uint16_t i=0; i < get_total_contacts(); ++i) {
         uint32_t exposure = exposed_in_period(i, t0, t1) * (uint32_t)rate / 10L;
@@ -88,11 +89,20 @@ static void calc_time_to_complete(void)
     time_to_complete = step_time;
 }
 
+static void rewind_sim(void)
+{
+    time_to_complete = final_time();
+    printk("complete: %d\n", time_to_complete);
+    reset_exposures(true);
+    step_time = 0;
+    gui_update_progress(0, 0);    
+}
+
 static void restart_sim( uint8_t rows, uint8_t space)
 {
-//printk("restart\n");
     simulate_contacts(rows, space);
     calc_time_to_complete();
+printk("complete: %d\n", time_to_complete);
     reset_exposures(true);
     step_time = 0;
     gui_update_progress(0, 0);
@@ -105,15 +115,19 @@ static void next_analysis_point(void)
     step_time += step_interval;   
     
     printk("exposure: %d %d %d %d \n", step_time, get_exposure(1), get_exposure(2), get_exposure(3));
-    uint8_t progress = MIN(100, step_time * 100 / time_to_complete);
-    gui_update_progress(progress, step_time);
+    if (time_to_complete != 0) {
+        uint8_t progress = MIN(100, step_time * 100 / time_to_complete);
+printk("pppp: %d, %d, %d\n", progress, step_time, step_interval);
+        gui_update_progress(progress, step_time);
+    }
 }
 
 
-void sim_msg_restart(uint8_t rows, uint8_t space, uint8_t rate)
+void sim_msg_restart(uint8_t rows, uint8_t space, uint8_t rate, bool tag_mode)
 {
     static sim_message_t msg;
     msg.type = SIM_MSG_RESTART;
+    msg.params.tag_mode = tag_mode;
     msg.params.rows = rows;
     msg.params.space = space;
     msg.params.rate = rate;
@@ -121,10 +135,11 @@ void sim_msg_restart(uint8_t rows, uint8_t space, uint8_t rate)
     k_msgq_put(&m_sim_cmd_queue, &msg, K_NO_WAIT);
 }
 
-void sim_msg_next(void)
+void sim_msg_next(bool tag_mode)
 {
     static sim_message_t msg;
     msg.type = SIM_MSG_NEXT;
+    msg.params.tag_mode = tag_mode;
     k_msgq_put(&m_sim_cmd_queue, &msg, K_NO_WAIT);
 }
 
@@ -149,7 +164,12 @@ static void process_sim_msg_queue(void)
         switch(sim_message.type){
             case SIM_MSG_RESTART:
                 rate = sim_message.params.rate;
-                restart_sim(sim_message.params.rows, sim_message.params.space);
+                if (sim_message.params.tag_mode) {
+                    rewind_sim();
+                }
+                else {
+                    restart_sim(sim_message.params.rows, sim_message.params.space);
+                }
                 break;
             case SIM_MSG_NEXT:
                 next_analysis_point();

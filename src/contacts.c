@@ -42,7 +42,9 @@ static void add_contact(uint16_t badgeA, uint16_t badgeB, uint32_t start_time, u
 
     __ASSERT(distance != 0, ERR_BAD_PARAM);
     _contact_list[_total_contacts].distance = distance;
+    printk("added %4d %4d %4d %4d %4d\n", _total_contacts, badgeA, start_time, end_time, (int)distance); 
     _total_contacts++;
+
 }
 
 // calcuates the distance between two badges for classroom mode which assumes
@@ -51,13 +53,14 @@ static void add_contact(uint16_t badgeA, uint16_t badgeB, uint32_t start_time, u
 static uint8_t calc_distance(int badgeA, int badgeB, uint8_t rows, uint8_t space)
 {
     double distance;
-
+    uint8_t result;
     double x = (double)(badgeA % rows) - (double)(badgeB % rows);
     double y = (double)(badgeA / rows) - (double)(badgeB / rows);
     distance = space * 12.0 * sqrt(x * x + y * y);
     if (distance > 254)
         return 255;
-    return (uint8_t)distance;
+    result = MAX(MIN(distance,255.0), 1.0);
+    return result;
 }
 
 
@@ -132,6 +135,7 @@ void simulate_contacts(uint8_t rows, uint8_t space)
 
 void reset_proximity_contacts(void)
 {
+printk("reset prox contacts\n");
     prox_start_time = k_uptime_get_32();
     _total_contacts = 0;
 }
@@ -145,8 +149,12 @@ void add_proximity_contact(uint16_t badgeA, uint16_t badgeB, int8_t rssi)
 
     if (rssi > -RSSI_TUNE_CONSTANT)
     {
-        double distance = (rssi + RSSI_TUNE_CONSTANT) * 2.0;
+        current_time *= DEMO_VIDEO_ACCEL;
+        interval *= DEMO_VIDEO_ACCEL;
+        double distance = 500.0 / (rssi + RSSI_TUNE_CONSTANT);
+//        printk("contact %d-%d: %d %d\n", badgeA, badgeB, rssi, 500 / (rssi + RSSI_TUNE_CONSTANT));
+//        if (distance<1.0) distance = 1.0;
         add_contact(badgeA, badgeB, current_time, current_time + interval, distance);
-        printk("contact %d-%d: %d\n", badgeA, badgeB, (rssi + RSSI_TUNE_CONSTANT) * 2);
+        _final_time = current_time + interval;
     }
 }
