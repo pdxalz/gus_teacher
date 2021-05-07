@@ -19,14 +19,15 @@ static uint8_t  rate = 4;
 static uint16_t time_of_last_exposure;
 static uint16_t time_to_complete;
 static uint16_t _current_step_index;
+static bool _first_step;
 
 static uint32_t exposed_in_period(int index, uint16_t t0, uint16_t t1) 
 {
     t0 = MAX(t0, get_start_time(index));
     t1 = MIN(t1, get_end_time(index));
     uint32_t exposure = (t1-t0) * 1000 / get_distance_squared(index);
-    printk("exposed: %d %d %d\n", t0, t1, get_distance_squared(index));
-    k_sleep(K_MSEC(50));
+//    printk("exposed: %d %d %d\n", t0, t1, get_distance_squared(index));
+//    k_sleep(K_MSEC(50));
 
     return (t0 < t1 ) ? exposure : 0;
 }
@@ -39,7 +40,7 @@ static void add_exposure(int index, uint32_t exposure, bool update)
 {
     int badgeA = get_contact_badgeA(index);
     int badgeB = get_contact_badgeB(index);
-printk("add ex: %d %d %d\n", badgeA, badgeB, exposure);
+//printk("add ex: %d %d %d\n", badgeA, badgeB, exposure);
     // if either but not both infected, add the exposure to the non-infected
     if (!get_infected(badgeA) && get_infected(badgeB)) {
         exposure /= (has_mask(badgeA) ? 3 : 1);
@@ -98,6 +99,10 @@ static void calc_time_to_complete(void)
 
 static void apply_infections_next_step(void)
 {
+    if (_first_step) {
+        reset_exposures(true);
+        _first_step = false;
+    }
     for (int i=0; i<RECORDS_PER_STEP; ++i)
     {
         if (_current_step_index >= get_total_contacts()) {
@@ -109,16 +114,31 @@ static void apply_infections_next_step(void)
         ++_current_step_index;
     printk("exposure: %d %d %d %d \n", _current_step_index, get_exposure(1), get_exposure(2), get_exposure(3));
 
-
+        uint8_t progress = MIN(100, _current_step_index * 100 / get_total_contacts());
+        gui_update_progress(progress, total_infections());
     }
+}
+
+
+static void show_number_of_infections(void)
+{
+    reset_exposures(false);
+    for (int i=0; i<get_total_contacts(); ++i)
+    {
+        uint32_t exposure = 100000 / get_distance_squared(i);
+        add_exposure(i, exposure, false);
+    }
+    uint8_t progress = MIN(100, total_infections() * 100 / gd_get_node_count());
+    gui_update_progress(progress, total_infections());
 }
 
 static void rewind_sim(void)
 {
+    _first_step = true;
     _current_step_index = 0;
     time_to_complete = final_time();
     printk("complete: %d\n", time_to_complete);
-    reset_exposures(true);
+    reset_exposures(false);
     step_time = get_start_time(0);
     gui_update_progress(0, 0);    
 }
@@ -142,8 +162,8 @@ static void next_analysis_point(void)
     printk("exposure: %d %d %d %d \n", step_time, get_exposure(1), get_exposure(2), get_exposure(3));
     if (time_to_complete != 0) {
         uint8_t progress = MIN(100, step_time * 100 / time_to_complete);
-printk("pppp: %d, %d, %d\n", progress, step_time, step_interval);
-        gui_update_progress(progress, step_time);
+
+        gui_update_progress(progress, total_infections());
     }
 }
 
@@ -210,6 +230,8 @@ static void process_sim_msg_queue(void)
                 add_proximity_contact(sim_message.params.badgeA,
                                  sim_message.params.badgeB,
                                  sim_message.params.rssi);
+                show_number_of_infections();
+
                 break;
                
         }

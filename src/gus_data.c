@@ -228,6 +228,16 @@ bool everyone_infected(void) {
     return true;
 }
 
+uint16_t total_infections(void) {
+    uint16_t count = 0;
+    for (int i=0; i<node_count; ++i) {
+        if (gus_nodes[i].infected) {
+            ++count;
+        }
+    }
+    return count;
+}
+
 // fills buf with list of names separated by '\n'
 void gd_get_namelist(char * buf, int length)
 {

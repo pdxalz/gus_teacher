@@ -28,6 +28,7 @@ char * get_name(int index);
 void set_name(int index, const char * name);
 void reset_exposures(bool update);
 bool everyone_infected(void);
+uint16_t total_infections(void);
 uint16_t get_badge_from_address(uint16_t addr);
 
 #endif  //__GUS_DATA_H

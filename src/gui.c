@@ -806,7 +806,7 @@ static void process_cmd_msg_queue(void)
 
         case GUI_MSG_PROGRESS:
             lv_bar_set_value(bar, cmd_message.params.progress, LV_ANIM_OFF);
-            sprintf(buf, "time: %d", cmd_message.params.param);
+            sprintf(buf, "infections: %d", cmd_message.params.param);
             lv_label_set_text(label_progress, buf);
             break;
 
