@@ -6,55 +6,96 @@
 #include "gus_data.h"
 #include "gus_config.h"
 
-#define MAX_CONTACTS 5000
-//const uint8_t rows = 1;
-//const uint8_t desk_spacing = 4*12;
-
-
-const uint8_t safe_distance = 100;
-const uint16_t create_interval = (1*60*10);  //todo 
-
-struct contact {
-    uint8_t     badgeA;
-    uint8_t     badgeB;
-    uint16_t    start_time;
-    uint16_t    end_time;
-    uint8_t     distance;
+////////////////////////
+// declarations
+////////////////////////
+struct contact
+{
+    uint8_t badgeA;
+    uint8_t badgeB;
+    uint16_t start_time;
+    uint16_t end_time;
+    uint8_t distance;
 };
 
+////////////////////
+// static variables
+////////////////////
 static uint16_t _final_time;
 static uint16_t _total_contacts;
-static struct contact contact_list[MAX_CONTACTS];
+static uint32_t prox_start_time;
+static struct contact _contact_list[MAX_CONTACTS];
 
-uint16_t get_total_contacts(void) 
+/////////////////////
+// Static functions
+/////////////////////
+
+// adds a new contact recored
+static void add_contact(uint16_t badgeA, uint16_t badgeB, uint32_t start_time, uint32_t end_time, double distance)
+{
+    __ASSERT(_total_contacts < MAX_CONTACTS, ERR_BAD_PARAM);
+
+    _contact_list[_total_contacts].badgeA = badgeA;
+    _contact_list[_total_contacts].badgeB = badgeB;
+    _contact_list[_total_contacts].start_time = start_time;
+    _contact_list[_total_contacts].end_time = end_time;
+
+    __ASSERT(distance != 0, ERR_BAD_PARAM);
+    _contact_list[_total_contacts].distance = distance;
+    printk("added %4d %4d %4d %4d %4d\n", _total_contacts, badgeA, start_time, end_time, (int)distance); 
+    _total_contacts++;
+
+}
+
+// calcuates the distance between two badges for classroom mode which assumes
+// badges are in alphabetical order, in a number of row specified by "rows",
+// and separated in distance by "space".
+static uint8_t calc_distance(int badgeA, int badgeB, uint8_t rows, uint8_t space)
+{
+    double distance;
+    uint8_t result;
+    double x = (double)(badgeA % rows) - (double)(badgeB % rows);
+    double y = (double)(badgeA / rows) - (double)(badgeB / rows);
+    distance = space * 12.0 * sqrt(x * x + y * y);
+    if (distance > 254)
+        return 255;
+    result = MAX(MIN(distance,255.0), 1.0);
+    return result;
+}
+
+
+/////////////////////
+// non-static functions
+/////////////////////
+uint16_t get_total_contacts(void)
 {
     return _total_contacts;
 }
 
 uint16_t get_start_time(int index)
 {
-    return contact_list[index].start_time;
+    return _contact_list[index].start_time;
 }
 
 uint16_t get_end_time(int index)
 {
-    return contact_list[index].end_time;
+    return _contact_list[index].end_time;
 }
 
 uint16_t get_distance_squared(int index)
 {
-    uint16_t dist = contact_list[index].distance;
-    return  dist * dist;
+    uint16_t dist = _contact_list[index].distance;
+    return dist * dist;
 }
 
 uint8_t get_contact_badgeA(int index)
 {
-    return contact_list[index].badgeA;
+    return _contact_list[index].badgeA;
 }
 
 uint8_t get_contact_badgeB(int index)
 {
-    return contact_list[index].badgeB;
+    return _contact_list[index].badgeB;
 }
 
 uint16_t final_time(void)
@@ -62,31 +103,6 @@ uint16_t final_time(void)
     return _final_time;
 }
 
-void add_contact(uint16_t badgeA, uint16_t badgeB, uint32_t start_time, uint32_t end_time, double distance)
-{
-    __ASSERT(_total_contacts < MAX_CONTACTS, ERR_BAD_PARAM);
-
-    contact_list[_total_contacts].badgeA = badgeA;
-    contact_list[_total_contacts].badgeB = badgeB;
-    contact_list[_total_contacts].start_time = start_time;
-    contact_list[_total_contacts].end_time = end_time;
-
-    __ASSERT(distance != 0, ERR_BAD_PARAM);
-    contact_list[_total_contacts].distance = distance;
-    _total_contacts++;
-}
-
-static uint8_t calc_distance(int badgeA, int badgeB, uint8_t rows, uint8_t space)
-{
-    double distance;
-
-    double x = (double)(badgeA % rows) - (double)(badgeB % rows);
-    double y = (double)(badgeA / rows) - (double)(badgeB / rows);
-    distance = space * 12.0 * sqrt(x*x +y*y);
-    if (distance > 254)
-        return 255;
-    return (uint8_t) distance;
-}
 
 // create contacts for non-proximity simulation
 void simulate_contacts(uint8_t rows, uint8_t space)
@@ -96,21 +112,51 @@ void simulate_contacts(uint8_t rows, uint8_t space)
     uint8_t distance;
     uint8_t node_count = gd_get_node_count();
 
-    for (uint16_t i=1; i<10; ++i) {  //todo until contacts full
-        for (uint8_t badgeA=0; badgeA<node_count; ++badgeA) {
-            for (uint8_t badgeB=0; badgeB<gd_get_node_count(); ++badgeB) {
-                if (badgeA==badgeB) continue;
-            
+    for (uint16_t i = 1; i < 10; ++i)
+    { 
+        for (uint8_t badgeA = 0; badgeA < node_count; ++badgeA)
+        {
+            for (uint8_t badgeB = 0; badgeB < gd_get_node_count(); ++badgeB)
+            {
+                if (badgeA == badgeB)
+                    continue;
+
                 distance = calc_distance(badgeA, badgeB, rows, space);
-                if (distance < safe_distance) {
-                    add_contact(badgeA, badgeB, time, time+create_interval, distance);
+                if (distance < SAFE_DISTANCE)
+                {
+                    add_contact(badgeA, badgeB, time, time + TIME_PER_CONTACT, distance);
                 }
             }
         }
-        time += create_interval;
+        time += TIME_PER_CONTACT;
     }
     _final_time = time;
 }
 
+void reset_proximity_contacts(void)
+{
+printk("reset prox contacts\n");
+    prox_start_time = k_uptime_get_32();
+    _total_contacts = 0;
+}
 
 
+void add_proximity_contact(uint16_t addr1, uint16_t addr2, int8_t rssi)
+{
+    // time in seconds since proximity checks were restarted
+    uint32_t current_time = (k_uptime_get_32() - prox_start_time) / 1000;
+    uint32_t interval = gd_get_node_count();
+
+    uint16_t badgeA = get_badge_from_address(addr1);
+    uint16_t badgeB = get_badge_from_address(addr2);
+    if (rssi > -RSSI_TUNE_CONSTANT)
+    {
+        current_time *= DEMO_VIDEO_ACCEL;
+        interval *= DEMO_VIDEO_ACCEL;
+        double distance = 500.0 / (rssi + RSSI_TUNE_CONSTANT);
+//        printk("contact %d-%d: %d %d\n", badgeA, badgeB, rssi, 500 / (rssi + RSSI_TUNE_CONSTANT));
+//        if (distance<1.0) distance = 1.0;
+        add_contact(badgeA, badgeB, current_time, current_time + interval, distance);
+        _final_time = current_time + interval;
+    }
+}

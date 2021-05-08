@@ -18,15 +18,14 @@
 #include "gui.h"
 #include "simulate.h"
 
-
 //#define LOG_LEVEL CONFIG_LOG_DEFAULT_LEVEL
 //#include <logging/log.h>
 //LOG_MODULE_REGISTER(app);
 
-
 static void bt_ready(int err)
 {
-	if (err) {
+	if (err)
+	{
 		printk("Bluetooth init failed (err %d)\n", err);
 		return;
 	}
@@ -37,12 +36,14 @@ static void bt_ready(int err)
 	dk_buttons_init(NULL);
 
 	err = bt_mesh_init(bt_mesh_dk_prov_init(), model_handler_init());
-	if (err) {
+	if (err)
+	{
 		printk("Initializing mesh failed (err %d)\n", err);
 		return;
 	}
 
-	if (IS_ENABLED(CONFIG_SETTINGS)) {
+	if (IS_ENABLED(CONFIG_SETTINGS))
+	{
 		settings_load();
 	}
 
@@ -54,35 +55,39 @@ static void bt_ready(int err)
 
 void on_gui_event(gui_event_t *event)
 {
-    switch(event->evt_type) {
-            case GUI_EVT_SCAN:
-                    model_handler_provision();
-                    gui_update_namelist();
-                    update_checkboxes();
-                    break;
-            case GUI_EVT_IDENTIFY:
-                    model_handler_set_state(event->addr, BT_MESH_GUS_CLI_IDENTIFY);
-                    break;
-    }
+	switch (event->evt_type)
+	{
+	case GUI_EVT_SCAN:
+		model_handler_provision();
+		gui_update_namelist();
+		update_checkboxes();
+		break;
+	case GUI_EVT_IDENTIFY:
+		model_handler_set_state(event->addr, BT_MESH_GUS_IDENTIFY);
+		break;
+	case GUI_EVT_RECORD:
+		model_report_request(event->addr);
+		break;
+	}
 }
-
-
 
 void main(void)
 {
+	int err;
+
 	gui_config_t gui_config = {.event_callback = on_gui_event};
 	gui_init(&gui_config);
-
-	int err;
 
 	printk("Initializing...\n");
 
 	err = bt_enable(bt_ready);
-	if (err) {
+	if (err)
+	{
 		printk("Bluetooth init failed (err %d)\n", err);
 	}
 
-	while (1) {
+	while (1)
+	{
 		k_sleep(K_MSEC(1000));
 	}
-} 
+}

@@ -19,7 +19,8 @@
 #include "gus_config.h"
 #include "gus_data.h"
 #include "gus_cli.h"
-
+#include "simulate.h"
+#include "gui.h"
 
 #define STATE_CACHE_SIZE 10
 
@@ -56,14 +57,20 @@ static void button_handler_cb(uint32_t pressed, uint32_t changed)
 {
     if ((pressed & changed & BIT(0)))
     {
-        model_handler_set_state(3, 1);
+        
+        model_report_request(gui_get_selected_addr());
+
+
+
+
+//        model_handler_set_state(3, 1);
     } else  if ((pressed & changed & BIT(1)))
     {
-        model_handler_set_state(7, 1);
+        model_handler_set_state(gui_get_selected_addr(), 6);
     } else  if ((pressed & changed & BIT(2)))
     {
         //model_handler_set_state(4, 2);
-        model_scan_for_badges();
+        model_handler_set_state(gui_get_selected_addr(), 2);
     } else  if ((pressed & changed & BIT(3)))
     {
         model_handler_set_state(0xc000, 3);
@@ -92,7 +99,7 @@ BT_MESH_HEALTH_PUB_DEFINE(health_pub, 0);
 
 struct state_cache {
 	uint16_t addr;
-	enum bt_mesh_gus_cli_state state;
+	enum bt_mesh_gus_state state;
 };
 
 
@@ -113,35 +120,45 @@ struct state_cache {
 //static bool presence_cache_entry_check_and_update(uint16_t addr,
 //				       enum bt_mesh_chat_cli_presence presence)
 
-static void handle_gus_start(struct bt_mesh_gus_cli *gus)
+static void handle_gus_start(struct bt_mesh_gus *gus)
 {
     printk("started gus\n");
 	
 }
 
-static void handle_gus_set_state(struct bt_mesh_gus_cli *gus,
-				 struct bt_mesh_msg_ctx *ctx,
-				 enum bt_mesh_gus_cli_state state)
-{
-
-}
-
-
-static void handle_gus_sign_in_reply(struct bt_mesh_gus_cli *gus,
+static void handle_gus_sign_in_reply(struct bt_mesh_gus *gus,
 				 struct bt_mesh_msg_ctx *ctx,
 				 const uint8_t *msg)
 {
     gd_add_node(msg, ctx->addr, false, false, false);
 }
 
+static void handle_gus_report_reply(struct bt_mesh_gus *gus,
+				 struct bt_mesh_msg_ctx *ctx,
+				 const uint8_t *msg)
+{
+    struct gus_report_data * dd = (struct gus_report_data *)msg;
+    uint16_t badgeA = ctx->addr;
+    for (int i=0; i<NUM_PROXIMITY_REPORTS; ++i) {
+        uint16_t badgeB = dd[i+0].addr;
+        int8_t rssi = dd[i+0].rssi;
 
-static const struct bt_mesh_gus_cli_handlers gus_handlers = {
+        if (rssi > -90) {
+            sim_msg_add_contact(badgeA, badgeB, rssi);
+        }
+
+//        printk("rr (%d %d))\n", (int)dd[i+0].addr, (int)dd[i+0].rssi );
+    }
+}
+
+
+static const struct bt_mesh_gus_handlers gus_handlers = {
 	.start = handle_gus_start,
-	.set_state = handle_gus_set_state,
         .sign_in_reply = handle_gus_sign_in_reply,
+        .report_reply = handle_gus_report_reply,
 };
 
-static struct bt_mesh_gus_cli gus = {
+static struct bt_mesh_gus gus = {
 	.handlers = &gus_handlers,
 };
 
@@ -165,7 +182,7 @@ static const struct bt_mesh_comp comp = {
 
 
 
-void model_handler_set_state(uint16_t addr, enum bt_mesh_gus_cli_state state)
+void model_handler_set_state(uint16_t addr, enum bt_mesh_gus_state state)
 {
     int err;
 
@@ -206,6 +223,17 @@ void model_set_name(uint16_t addr, const uint8_t *name)
     }
 }
 
+void model_report_request(uint16_t addr)
+{
+    int err;
+    
+//    printk("requesting report %d\n", addr);
+
+    err = bt_mesh_gus_cli_report_request(&gus, addr);
+    if (err) {
+        printk("report request %d failed %d\n", addr, err);
+    }
+}
 
 /******************************************************************************/
 /******************************** Public API **********************************/

@@ -1,5 +1,6 @@
 #include <zephyr.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "gus_config.h"
 #include "gus_data.h"
@@ -28,29 +29,21 @@ uint16_t node_count;
 
 static void update_node_health_state(uint8_t index, bool initializing)
 {
-    enum bt_mesh_gus_cli_state state = BT_MESH_GUS_CLI_HEALTHY;
-
-    //if (get_infected(index)) {
-    //    state = BT_MESH_GUS_CLI_INFECTED;
-    //} else if (has_mask(index)) {
-    //    state = BT_MESH_GUS_CLI_MASKED;        
-    //} else if (has_vaccine(index)) {
-    //    state = BT_MESH_GUS_CLI_VACCINATED;        
-    //}
+    enum bt_mesh_gus_state state = BT_MESH_GUS_HEALTHY;
 
     state = has_vaccine(index) ? 
                 (has_mask(index) ? 
-                    (get_infected(index) ? BT_MESH_GUS_CLI_VACCINATED_MASKED_INFECTED
-                                         : BT_MESH_GUS_CLI_VACCINATED_MASKED) :
-                    (get_infected(index) ? BT_MESH_GUS_CLI_VACCINATED_INFECTED
-                                         : BT_MESH_GUS_CLI_VACCINATED) ) :
+                    (get_infected(index) ? BT_MESH_GUS_VACCINATED_MASKED_INFECTED
+                                         : BT_MESH_GUS_VACCINATED_MASKED) :
+                    (get_infected(index) ? BT_MESH_GUS_VACCINATED_INFECTED
+                                         : BT_MESH_GUS_VACCINATED) ) :
                 (has_mask(index) ? 
-                    (get_infected(index) ? BT_MESH_GUS_CLI_MASKED_INFECTED
-                                         : BT_MESH_GUS_CLI_MASKED) :
-                    (get_infected(index) ? BT_MESH_GUS_CLI_INFECTED
-                                         : BT_MESH_GUS_CLI_HEALTHY) );
+                    (get_infected(index) ? BT_MESH_GUS_MASKED_INFECTED
+                                         : BT_MESH_GUS_MASKED) :
+                    (get_infected(index) ? BT_MESH_GUS_INFECTED
+                                         : BT_MESH_GUS_HEALTHY) );
                        
-    if (initializing && (state == BT_MESH_GUS_CLI_HEALTHY)) {
+    if (initializing && (state == BT_MESH_GUS_HEALTHY)) {
         return;
     }
     printk("update node %d %d %d\n", index, state, initializing);
@@ -166,6 +159,13 @@ void gd_init(void)
     init_sim_settings();
 }
 
+
+int cmpfunc (const void * a, const void * b) 
+{
+    return strcmp(((struct gus_node * )a)->name,((struct gus_node *)b)->name);
+//   return ( *(int*)a - *(int*)b );
+}
+
 void gd_add_node(const char * name, uint16_t addr, bool patient_zero, bool mask, bool vaccine)
 {
     int i;
@@ -191,6 +191,7 @@ void gd_add_node(const char * name, uint16_t addr, bool patient_zero, bool mask,
     gus_nodes[i].mask = mask;
     gus_nodes[i].vaccine = vaccine;
 
+    qsort(gus_nodes, node_count, sizeof(struct gus_node), cmpfunc);
     gui_update_namelist();
 }
 
@@ -207,6 +208,17 @@ void set_name(int index, const char * name)
 }
 
 
+uint16_t get_badge_from_address(uint16_t addr)
+{
+    for (int i=0; i<node_count; ++i) {
+        if (addr == gus_nodes[i].addr) {
+            return i;
+        }
+    }
+    __ASSERT_NO_MSG(1);
+    return 0;
+}
+
 bool everyone_infected(void) {
     for (int i=0; i<node_count; ++i) {
         if (!gus_nodes[i].infected) {
@@ -216,12 +228,22 @@ bool everyone_infected(void) {
     return true;
 }
 
+uint16_t total_infections(void) {
+    uint16_t count = 0;
+    for (int i=0; i<node_count; ++i) {
+        if (gus_nodes[i].infected) {
+            ++count;
+        }
+    }
+    return count;
+}
+
 // fills buf with list of names separated by '\n'
 void gd_get_namelist(char * buf, int length)
 {
     int pos = 0;
     buf[0] = '\0';
-    for (int i=0; i<MAX_GUS_NODES; ++i) {
+    for (int i=0; i<node_count && i<MAX_GUS_NODES; ++i) {
         if (gus_nodes[i].addr == 0) {
             break;
         }
@@ -233,9 +255,11 @@ void gd_get_namelist(char * buf, int length)
         pos = strlen(buf);
         __ASSERT_NO_MSG(pos < length);
 
-        strncpy(&buf[pos], "\n", length - pos); 
-        pos = strlen(buf);
-        __ASSERT_NO_MSG(pos < length);
+        if (i != node_count-1) {
+            strncpy(&buf[pos], "\n", length - pos); 
+            pos = strlen(buf);
+            __ASSERT_NO_MSG(pos < length);
+        }
     }
 }
 
@@ -245,17 +269,24 @@ uint16_t gd_get_node_count(void)
     return node_count;
 }
 
+void clear_node_list(void)
+{
+    node_count = 0;
+}
+
 void reset_exposures(bool update)
 {
+
     // publish health to all
     if (update) {
-        model_handler_set_state(0, BT_MESH_GUS_CLI_HEALTHY);
+        model_handler_set_state(0, BT_MESH_GUS_HEALTHY);
     }
-
+printk("All green\n");
     for (int i=0; i < gd_get_node_count(); ++i) {
         set_exposure(i, 0);
         set_infected(i, is_patient_zero(i));
         if (update) {
+printk("patient zero %d\n", i);
             update_node_health_state(i, true);
         }
     }
