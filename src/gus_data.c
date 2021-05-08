@@ -269,6 +269,11 @@ uint16_t gd_get_node_count(void)
     return node_count;
 }
 
+void clear_node_list(void)
+{
+    node_count = 0;
+}
+
 void reset_exposures(bool update)
 {
 

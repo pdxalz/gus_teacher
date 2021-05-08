@@ -49,4 +49,7 @@ void gui_update_progress(uint8_t progress, uint16_t time);
 
 // returns the node address of the selected item
 uint16_t gui_get_selected_addr(void);
+
+// empties the node list
+void clear_node_list(void);
 #endif
