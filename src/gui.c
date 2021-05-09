@@ -1,10 +1,10 @@
-#include "gui.h"
 #include <zephyr.h>
 #include <device.h>
 #include <drivers/display.h>
 #include <lvgl.h>
 #include <stdio.h>
 #include <string.h>
+#include "gui.h"
 #include "gus_config.h"
 #include "gus_data.h"
 #include "simulate.h"
@@ -19,22 +19,6 @@ const struct device *display_dev;
   *      DEFINES
   *********************/
 #define NAMELIST_LEN (MAX_GUS_NODES * (MAX_NAME_LENGTH + 3))
-
-/**********************
-    *  STATIC PROTOTYPES
-    **********************/
-static void update_control_visibility(void);
-static void mode_buttons(lv_obj_t *parent);
-static void badges_create(lv_obj_t *parent);
-static void configure_create(lv_obj_t *parent);
-static void analysis_create(lv_obj_t *parent);
-static void ta_event_cb(lv_obj_t *_ta_new_name, lv_event_t e);
-static void kb_event_cb(lv_obj_t *_ta_new_name, lv_event_t e);
-static void btn_badge_event_cb(lv_obj_t *btn, lv_event_t e);
-static void btn_config_event_cb(lv_obj_t *btn, lv_event_t e);
-static void btn_analyze_event_cb(lv_obj_t *btn, lv_event_t e);
-static void btn_edit_name_event_cb(lv_obj_t *btn, lv_event_t e);
-static void keyboard_create(lv_obj_t *parent);
 
 /**********************
  *  STATIC VARIABLES
@@ -105,90 +89,30 @@ enum gus_mode
  **********************/
 // defines how quickly the play operation steps through the simulation
 #define PLAY_TIMER_VALUE K_SECONDS(2)
+//extern void play_expiry_function(struct k_timer *timer_id);
+
 // defines how often a report request is sent to the badges.  One request is
 // sent to one badge per timer event, so if there are 10 badges it will take
 // 10 times the timer value for all badges to get a report request.
 // Decreasing the timer interval can cause too much traffic to occur on
 // the mesh network.
 #define RECORD_TIMER_VALUE K_SECONDS(5)
+//extern void record_expiry_function(struct k_timer *timer_id);
 
-extern void play_expiry_function(struct k_timer *timer_id);
-extern void record_expiry_function(struct k_timer *timer_id);
+static void play_expiry_function(struct k_timer *timer_id);
+static void record_expiry_function(struct k_timer *timer_id);
 
 K_TIMER_DEFINE(play_timer, play_expiry_function, NULL);
 K_TIMER_DEFINE(record_timer, record_expiry_function, NULL);
 
 /**********************
-  *   GLOBAL FUNCTIONS
-  **********************/
-
-void lv_demo_widgets(void)
-{
-    lv_style_init(&_style_box);
-    lv_style_set_value_align(&_style_box, LV_STATE_DEFAULT, LV_ALIGN_OUT_TOP_LEFT);
-    lv_style_set_value_ofs_y(&_style_box, LV_STATE_DEFAULT, -LV_DPX(25));
-    lv_style_set_margin_top(&_style_box, LV_STATE_DEFAULT, LV_DPX(1));
-    lv_style_set_pad_top(&_style_box, LV_STATE_DEFAULT, LV_DPX(1));
-    lv_style_set_pad_bottom(&_style_box, LV_STATE_DEFAULT, LV_DPX(1));
-    lv_style_set_pad_left(&_style_box, LV_STATE_DEFAULT, LV_DPX(1));
-    lv_style_set_pad_right(&_style_box, LV_STATE_DEFAULT, LV_DPX(1));
-
-    mode_buttons(lv_scr_act());
-
-    badges_create(lv_scr_act());
-    configure_create(lv_scr_act());
-    analysis_create(lv_scr_act());
-    keyboard_create(lv_scr_act());
-
-    gus_mode = mode_badge;
-    update_control_visibility();
-}
-
-/**********************
  *   STATIC FUNCTIONS
  **********************/
-static bool proximityMode(void)
+// returns : true if in gus tag mode, false if in classroom mode
+static bool gus_tag_mode(void)
 {
-//printk("tag: %d\n", lv_dropdown_get_selected(dd_sim_mode));
+    //printk("tag: %d\n", lv_dropdown_get_selected(dd_sim_mode));
     return lv_dropdown_get_selected(_dd_sim_mode) == 1;
-}
-
-void play_expiry_function(struct k_timer *timer_id)
-{
-    if (lv_bar_get_value(_bar_progress) < 100)
-    {
-        sim_msg_next(proximityMode());
-        k_timer_start(&play_timer, PLAY_TIMER_VALUE, K_NO_WAIT);
-    }
-}
-
-static void stop_playback(void)
-{
-    k_timer_stop(&play_timer);
-}
-
-static void stop_recording(void)
-{
-    lv_btn_set_state(_btn_record, LV_BTN_STATE_RELEASED);
-    k_timer_stop(&record_timer);
-}
-
-// function called when record timer expires.  Sends a report request message
-// to the badge on the list pointed to by badge_index. It will send the message
-// to the next badge the next time this function is called.  This gives each
-// badge its own time slot to reply to the report request.  
-void record_expiry_function(struct k_timer *timer_id)
-{
-    static uint16_t badge_index = 0;
-    if (m_gui_callback)
-    {
-        badge_index = badge_index % gd_get_node_count();
-        m_gui_event.addr = get_address(badge_index++);
-        m_gui_event.evt_type = GUI_EVT_RECORD;
-        m_gui_callback(&m_gui_event);
-       k_timer_start(&record_timer, RECORD_TIMER_VALUE, K_NO_WAIT);
-    }
-    //    }
 }
 
 static uint16_t btnstate(enum gus_mode mode)
@@ -196,6 +120,7 @@ static uint16_t btnstate(enum gus_mode mode)
     return gus_mode == mode ? LV_BTN_STATE_CHECKED_RELEASED : LV_BTN_STATE_RELEASED;
 }
 
+// shows or hides the controls base on the current mode.
 static void update_control_visibility(void)
 {
     lv_obj_set_hidden(_roller_names, gus_mode != mode_badge && gus_mode != mode_analyze);
@@ -231,7 +156,7 @@ static void update_control_visibility(void)
     lv_obj_set_hidden(_label_rate, gus_mode != mode_config);
 
     lv_obj_set_hidden(_bar_progress, gus_mode != mode_analyze);
-    lv_obj_set_hidden(_btn_record, gus_mode != mode_analyze || !proximityMode());
+    lv_obj_set_hidden(_btn_record, gus_mode != mode_analyze || !gus_tag_mode());
     lv_obj_set_hidden(_btn_rewind, gus_mode != mode_analyze);
     lv_obj_set_hidden(_btn_play, gus_mode != mode_analyze);
     lv_obj_set_hidden(_btn_next, gus_mode != mode_analyze);
@@ -241,37 +166,8 @@ static void update_control_visibility(void)
     lv_obj_set_hidden(_ta_new_name, gus_mode != mode_edit_name);
 }
 
-static void mode_buttons(lv_obj_t *parent)
-{
-    static lv_style_t style;
-    lv_style_init(&style);
-    lv_style_set_radius(&style, LV_STATE_DEFAULT, 5);
-
-    _btn_badges = lv_btn_create(parent, NULL);
-    lv_obj_set_event_cb(_btn_badges, btn_badge_event_cb);
-    lv_obj_t *label = lv_label_create(_btn_badges, NULL);
-    lv_label_set_text(label, "Badges");
-    lv_obj_set_width(_btn_badges, 75);
-    lv_obj_set_pos(_btn_badges, 92, 5);
-    lv_obj_add_style(_btn_badges, LV_OBJ_PART_MAIN, &style);
-
-    _btn_config = lv_btn_create(parent, NULL);
-    lv_obj_set_event_cb(_btn_config, btn_config_event_cb);
-    label = lv_label_create(_btn_config, NULL);
-    lv_label_set_text(label, "Config");
-    lv_obj_set_width(_btn_config, 75);
-    lv_obj_set_pos(_btn_config, 167, 5);
-    lv_obj_add_style(_btn_config, LV_OBJ_PART_MAIN, &style);
-
-    _btn_analysis = lv_btn_create(parent, NULL);
-    lv_obj_set_event_cb(_btn_analysis, btn_analyze_event_cb);
-    label = lv_label_create(_btn_analysis, NULL);
-    lv_label_set_text(label, "Analysis");
-    lv_obj_set_width(_btn_analysis, 75);
-    lv_obj_set_pos(_btn_analysis, 242, 5);
-    lv_obj_add_style(_btn_analysis, LV_OBJ_PART_MAIN, &style);
-}
-
+// updates the state of the virus, mask and vaccine checkboxes based
+// on the state of the gus data.
 void update_checkboxes(void)
 {
     int item = lv_roller_get_selected(_roller_names);
@@ -283,9 +179,9 @@ void update_checkboxes(void)
     }
 }
 
+// reloads the namelist roller
 static void update_namelist(void)
 {
- //   static
     char namelist[NAMELIST_LEN];
 
     int item = lv_roller_get_selected(_roller_names);
@@ -294,6 +190,67 @@ static void update_namelist(void)
     lv_roller_set_selected(_roller_names, item, LV_ANIM_OFF);
 }
 
+// returns the item selected in the name roller control
+static uint16_t selected_address()
+{
+    return get_address(lv_roller_get_selected(_roller_names));
+}
+
+static void restart_simulation(void)
+{
+    uint8_t rows = lv_spinbox_get_value(_spinbox_rows);
+    uint8_t space = lv_spinbox_get_value(_spinbox_space);
+    uint8_t rate = lv_spinbox_get_value(_spinbox_rate);
+    sim_msg_restart(rows, space, rate, gus_tag_mode());
+}
+
+static void stop_playback(void)
+{
+    k_timer_stop(&play_timer);
+}
+
+static void stop_recording(void)
+{
+    lv_btn_set_state(_btn_record, LV_BTN_STATE_RELEASED);
+    k_timer_stop(&record_timer);
+}
+
+/**********************
+ *  timer event handlers
+ **********************/
+
+// function called when play timer expires.  Timer is restarted until
+// progress reaches 100
+static void play_expiry_function(struct k_timer *timer_id)
+{
+    if (lv_bar_get_value(_bar_progress) < 100)
+    {
+        sim_msg_next(gus_tag_mode());
+        k_timer_start(&play_timer, PLAY_TIMER_VALUE, K_NO_WAIT);
+    }
+}
+
+// function called when record timer expires.  Sends a report request message
+// to the badge on the list pointed to by badge_index. It will send the message
+// to the next badge the next time this function is called.  This gives each
+// badge its own time slot to reply to the report request.
+static void record_expiry_function(struct k_timer *timer_id)
+{
+    static uint16_t badge_index = 0;
+    if (m_gui_callback)
+    {
+        badge_index = badge_index % gd_get_node_count();
+        m_gui_event.addr = get_address(badge_index++);
+        m_gui_event.evt_type = GUI_EVT_RECORD;
+        m_gui_callback(&m_gui_event);
+        k_timer_start(&record_timer, RECORD_TIMER_VALUE, K_NO_WAIT);
+    }
+    //    }
+}
+
+/**********************
+ *  GUI event handlers
+ **********************/
 static void roller_event_cb(lv_obj_t *obj, lv_event_t event)
 {
     if (event == LV_EVENT_VALUE_CHANGED)
@@ -329,11 +286,6 @@ static void cb_vaccine_event_cb(lv_obj_t *obj, lv_event_t event)
     }
 }
 
-static uint16_t selected_address()
-{
-    return get_address(lv_roller_get_selected(_roller_names));
-}
-
 static void btn_scan_event_cb(lv_obj_t *obj, lv_event_t event)
 {
     if (obj == _btn_scan && event == LV_EVENT_CLICKED)
@@ -357,14 +309,6 @@ static void btn_scan_event_cb(lv_obj_t *obj, lv_event_t event)
     }
 }
 
-static void restart_simulation(void)
-{
-        uint8_t rows = lv_spinbox_get_value(_spinbox_rows);
-        uint8_t space = lv_spinbox_get_value(_spinbox_space);
-        uint8_t rate = lv_spinbox_get_value(_spinbox_rate);
-        sim_msg_restart(rows, space, rate, proximityMode());
-}
-
 static void btn_playback_event_cb(lv_obj_t *obj, lv_event_t event)
 {
     if (m_gui_callback && event == LV_EVENT_CLICKED)
@@ -378,14 +322,14 @@ static void btn_playback_event_cb(lv_obj_t *obj, lv_event_t event)
         else if (obj == _btn_play)
         {
             stop_recording();
-            sim_msg_next(proximityMode());
+            sim_msg_next(gus_tag_mode());
             k_timer_start(&play_timer, PLAY_TIMER_VALUE, K_NO_WAIT);
         }
         else if (obj == _btn_next)
         {
             stop_playback();
             stop_recording();
-            sim_msg_next(proximityMode());
+            sim_msg_next(gus_tag_mode());
         }
     }
     else if (event == LV_EVENT_VALUE_CHANGED)
@@ -405,6 +349,143 @@ static void btn_playback_event_cb(lv_obj_t *obj, lv_event_t event)
         }
     }
 }
+
+static void lv_spinbox_rows_increment_event_cb(lv_obj_t *btn, lv_event_t e)
+{
+    if (e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT)
+    {
+        lv_spinbox_increment(_spinbox_rows);
+    }
+}
+
+static void lv_spinbox_rows_decrement_event_cb(lv_obj_t *btn, lv_event_t e)
+{
+    if (e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT)
+    {
+        lv_spinbox_decrement(_spinbox_rows);
+    }
+}
+
+static void lv_spinbox_space_increment_event_cb(lv_obj_t *btn, lv_event_t e)
+{
+    if (e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT)
+    {
+        lv_spinbox_increment(_spinbox_space);
+    }
+}
+
+static void lv_spinbox_space_decrement_event_cb(lv_obj_t *btn, lv_event_t e)
+{
+    if (e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT)
+    {
+        lv_spinbox_decrement(_spinbox_space);
+    }
+}
+
+static void lv_spinbox_rate_increment_event_cb(lv_obj_t *btn, lv_event_t e)
+{
+    if (e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT)
+    {
+        lv_spinbox_increment(_spinbox_rate);
+    }
+}
+
+static void lv_spinbox_rate_decrement_event_cb(lv_obj_t *btn, lv_event_t e)
+{
+    if (e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT)
+    {
+        lv_spinbox_decrement(_spinbox_rate);
+    }
+}
+
+static void ta_event_cb(lv_obj_t *_ta_new_name, lv_event_t e)
+{
+    if (e == LV_EVENT_RELEASED)
+    {
+
+        if (e == LV_EVENT_DEFOCUSED)
+        {
+            lv_textarea_set_cursor_hidden(_ta_new_name, true);
+        }
+    }
+}
+
+static void kb_event_cb(lv_obj_t *_kb, lv_event_t e)
+{
+    lv_keyboard_def_event_cb(_keyboard, e);
+
+    if (e == LV_EVENT_CANCEL)
+    {
+        if (_keyboard)
+        {
+            gus_mode = mode_badge;
+            update_control_visibility();
+        }
+    }
+    else if (e == LV_EVENT_APPLY)
+    {
+        if (_keyboard)
+        {
+            const char *name = lv_textarea_get_text(_ta_new_name);
+            printk("name: %s\n", name);
+            int item = lv_roller_get_selected(_roller_names);
+            set_name(item, name);
+            model_set_name(get_address(item), name);
+            update_namelist();
+
+            gus_mode = mode_badge;
+            update_control_visibility();
+        }
+    }
+}
+
+static void btn_badge_event_cb(lv_obj_t *btn, lv_event_t e)
+{
+    if (e == LV_EVENT_CLICKED)
+    {
+        stop_playback();
+        stop_recording();
+        gus_mode = mode_badge;
+        model_handler_set_state(0, BT_MESH_GUS_OFF);
+        update_control_visibility();
+    }
+}
+
+static void btn_config_event_cb(lv_obj_t *btn, lv_event_t e)
+{
+    if (e == LV_EVENT_CLICKED)
+    {
+        stop_playback();
+        stop_recording();
+        gus_mode = mode_config;
+        model_handler_set_state(0, BT_MESH_GUS_OFF);
+
+        update_control_visibility();
+    }
+}
+
+static void btn_analyze_event_cb(lv_obj_t *btn, lv_event_t e)
+{
+    if (e == LV_EVENT_CLICKED)
+    {
+        gus_mode = mode_analyze;
+        stop_playback();
+        restart_simulation();
+        update_control_visibility();
+    }
+}
+
+static void btn_edit_name_event_cb(lv_obj_t *btn, lv_event_t e)
+{
+    gus_mode = mode_edit_name;
+    update_control_visibility();
+}
+
+/*************************
+ *  Control initialization
+ *************************/
+
+// initialize all controls on the badges "page"
 static void badges_create(lv_obj_t *parent)
 {
     const int zoff = 30;
@@ -463,54 +544,7 @@ static void badges_create(lv_obj_t *parent)
     lv_obj_set_event_cb(_btn_identify, btn_scan_event_cb);
 }
 
-static void lv_spinbox_rows_increment_event_cb(lv_obj_t *btn, lv_event_t e)
-{
-    if (e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT)
-    {
-        lv_spinbox_increment(_spinbox_rows);
-    }
-}
-
-static void lv_spinbox_rows_decrement_event_cb(lv_obj_t *btn, lv_event_t e)
-{
-    if (e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT)
-    {
-        lv_spinbox_decrement(_spinbox_rows);
-    }
-}
-
-static void lv_spinbox_space_increment_event_cb(lv_obj_t *btn, lv_event_t e)
-{
-    if (e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT)
-    {
-        lv_spinbox_increment(_spinbox_space);
-    }
-}
-
-static void lv_spinbox_space_decrement_event_cb(lv_obj_t *btn, lv_event_t e)
-{
-    if (e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT)
-    {
-        lv_spinbox_decrement(_spinbox_space);
-    }
-}
-
-static void lv_spinbox_rate_increment_event_cb(lv_obj_t *btn, lv_event_t e)
-{
-    if (e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT)
-    {
-        lv_spinbox_increment(_spinbox_rate);
-    }
-}
-
-static void lv_spinbox_rate_decrement_event_cb(lv_obj_t *btn, lv_event_t e)
-{
-    if (e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT)
-    {
-        lv_spinbox_decrement(_spinbox_rate);
-    }
-}
-
+// initialize all controls on the config "page"
 static void configure_create(lv_obj_t *parent)
 {
     const int zoff = 40;
@@ -613,11 +647,10 @@ static void configure_create(lv_obj_t *parent)
     lv_obj_set_event_cb(_btn_rate_down, lv_spinbox_rate_decrement_event_cb);
 }
 
+// initialize all controls on the analysis "page"
 static void analysis_create(lv_obj_t *parent)
 {
     // roller is shared and not created here
-    static lv_style_t style;
-    lv_style_init(&style);
 
     _bar_progress = lv_bar_create(parent, NULL);
     lv_obj_set_width(_bar_progress, 150);
@@ -665,6 +698,7 @@ static void analysis_create(lv_obj_t *parent)
     lv_obj_set_pos(_label_infections, 170, 210);
 }
 
+// initialize the keyboard control
 static void keyboard_create(lv_obj_t *parent)
 {
 
@@ -696,86 +730,58 @@ static void keyboard_create(lv_obj_t *parent)
     lv_keyboard_set_textarea(_keyboard, _ta_new_name);
 }
 
-static void ta_event_cb(lv_obj_t *_ta_new_name, lv_event_t e)
+// initialize the mode buttons which simulate a tabbed dialog
+static void mode_buttons(lv_obj_t *parent)
 {
-    if (e == LV_EVENT_RELEASED)
-    {
+    static lv_style_t style;
+    lv_style_init(&style);
+    lv_style_set_radius(&style, LV_STATE_DEFAULT, 5);
 
-        if (e == LV_EVENT_DEFOCUSED)
-        {
-            lv_textarea_set_cursor_hidden(_ta_new_name, true);
-        }
-    }
+    _btn_badges = lv_btn_create(parent, NULL);
+    lv_obj_set_event_cb(_btn_badges, btn_badge_event_cb);
+    lv_obj_t *label = lv_label_create(_btn_badges, NULL);
+    lv_label_set_text(label, "Badges");
+    lv_obj_set_width(_btn_badges, 75);
+    lv_obj_set_pos(_btn_badges, 92, 5);
+    lv_obj_add_style(_btn_badges, LV_OBJ_PART_MAIN, &style);
+
+    _btn_config = lv_btn_create(parent, NULL);
+    lv_obj_set_event_cb(_btn_config, btn_config_event_cb);
+    label = lv_label_create(_btn_config, NULL);
+    lv_label_set_text(label, "Config");
+    lv_obj_set_width(_btn_config, 75);
+    lv_obj_set_pos(_btn_config, 167, 5);
+    lv_obj_add_style(_btn_config, LV_OBJ_PART_MAIN, &style);
+
+    _btn_analysis = lv_btn_create(parent, NULL);
+    lv_obj_set_event_cb(_btn_analysis, btn_analyze_event_cb);
+    label = lv_label_create(_btn_analysis, NULL);
+    lv_label_set_text(label, "Analysis");
+    lv_obj_set_width(_btn_analysis, 75);
+    lv_obj_set_pos(_btn_analysis, 242, 5);
+    lv_obj_add_style(_btn_analysis, LV_OBJ_PART_MAIN, &style);
 }
 
-static void kb_event_cb(lv_obj_t *_kb, lv_event_t e)
+// Initialize all widgets in the user interface
+static void init_gus_widgets(void)
 {
-    lv_keyboard_def_event_cb(_keyboard, e);
+    lv_style_init(&_style_box);
+    lv_style_set_value_align(&_style_box, LV_STATE_DEFAULT, LV_ALIGN_OUT_TOP_LEFT);
+    lv_style_set_value_ofs_y(&_style_box, LV_STATE_DEFAULT, -LV_DPX(25));
+    lv_style_set_margin_top(&_style_box, LV_STATE_DEFAULT, LV_DPX(1));
+    lv_style_set_pad_top(&_style_box, LV_STATE_DEFAULT, LV_DPX(1));
+    lv_style_set_pad_bottom(&_style_box, LV_STATE_DEFAULT, LV_DPX(1));
+    lv_style_set_pad_left(&_style_box, LV_STATE_DEFAULT, LV_DPX(1));
+    lv_style_set_pad_right(&_style_box, LV_STATE_DEFAULT, LV_DPX(1));
 
-    if (e == LV_EVENT_CANCEL)
-    {
-        if (_keyboard)
-        {
-            gus_mode = mode_badge;
-            update_control_visibility();
-        }
-    }
-    else if (e == LV_EVENT_APPLY)
-    {
-        if (_keyboard)
-        {
-            const char *name = lv_textarea_get_text(_ta_new_name);
-            printk("name: %s\n", name);
-            int item = lv_roller_get_selected(_roller_names);
-            set_name(item, name);
-            model_set_name(get_address(item), name);
-            update_namelist();
+    mode_buttons(lv_scr_act());
 
-            gus_mode = mode_badge;
-            update_control_visibility();
-        }
-    }
-}
+    badges_create(lv_scr_act());
+    configure_create(lv_scr_act());
+    analysis_create(lv_scr_act());
+    keyboard_create(lv_scr_act());
 
-static void btn_badge_event_cb(lv_obj_t *btn, lv_event_t e)
-{
-    if (e == LV_EVENT_CLICKED)
-    {
-        stop_playback();
-        stop_recording();
-        gus_mode = mode_badge;
-        model_handler_set_state(0, BT_MESH_GUS_OFF);
-        update_control_visibility();
-    }
-}
-
-static void btn_config_event_cb(lv_obj_t *btn, lv_event_t e)
-{
-    if (e == LV_EVENT_CLICKED)
-    {
-        stop_playback();
-        stop_recording();
-        gus_mode = mode_config;
-        model_handler_set_state(0, BT_MESH_GUS_OFF);
-
-        update_control_visibility();
-    }
-}
-
-static void btn_analyze_event_cb(lv_obj_t *btn, lv_event_t e)
-{
-    if (e == LV_EVENT_CLICKED)
-    {
-        gus_mode = mode_analyze;
-        stop_playback();
-        restart_simulation();
-        update_control_visibility();
-    }
-}
-
-static void btn_edit_name_event_cb(lv_obj_t *btn, lv_event_t e)
-{
-    gus_mode = mode_edit_name;
+    gus_mode = mode_badge;
     update_control_visibility();
 }
 
@@ -834,6 +840,9 @@ uint16_t gui_get_selected_addr(void)
     return get_address(item);
 }
 
+/**********************
+  *   GLOBAL FUNCTIONS
+  **********************/
 void gui_run(void)
 {
     gd_init();
@@ -846,7 +855,7 @@ void gui_run(void)
         return;
     }
 
-    lv_demo_widgets();
+    init_gus_widgets();
 
     display_blanking_off(display_dev);
 
