@@ -16,9 +16,9 @@ const struct device *display_dev;
 ////////////////////////////////////////////////////////////
 
 /*********************
-  *      DEFINES
+  *      DEFINITIONS
   *********************/
-#define NAMELIST_LEN (MAX_GUS_NODES * (MAX_NAME_LENGTH + 3))
+#define NAMELIST_LEN (MAX_GUS_BADGES * (MAX_NAME_LENGTH + 3))
 
 /**********************
  *  STATIC VARIABLES
@@ -173,9 +173,9 @@ void update_checkboxes(void)
     int item = lv_roller_get_selected(_roller_names);
     if (item >= 0)
     {
-        lv_checkbox_set_checked(_cb_virus, is_patient_zero(item));
-        lv_checkbox_set_checked(_cb_mask, has_mask(item));
-        lv_checkbox_set_checked(_cb_vaccine, has_vaccine(item));
+        lv_checkbox_set_checked(_cb_virus, get_patient_zero(item));
+        lv_checkbox_set_checked(_cb_mask, get_mask(item));
+        lv_checkbox_set_checked(_cb_vaccine, get_vaccine(item));
     }
 }
 
@@ -185,7 +185,7 @@ static void update_namelist(void)
     char namelist[NAMELIST_LEN];
 
     int item = lv_roller_get_selected(_roller_names);
-    gd_get_namelist(namelist, NAMELIST_LEN);
+    get_badge_namelist(namelist, NAMELIST_LEN);
     lv_roller_set_options(_roller_names, namelist, LV_ROLLER_MODE_NORMAL);
     lv_roller_set_selected(_roller_names, item, LV_ANIM_OFF);
 }
@@ -193,7 +193,7 @@ static void update_namelist(void)
 // returns the item selected in the name roller control
 static uint16_t selected_address()
 {
-    return get_address(lv_roller_get_selected(_roller_names));
+    return get_badge_address(lv_roller_get_selected(_roller_names));
 }
 
 static void restart_simulation(void)
@@ -239,8 +239,8 @@ static void record_expiry_function(struct k_timer *timer_id)
     static uint16_t badge_index = 0;
     if (m_gui_callback)
     {
-        badge_index = badge_index % gd_get_node_count();
-        m_gui_event.addr = get_address(badge_index++);
+        badge_index = badge_index % get_badge_count();
+        m_gui_event.addr = get_badge_address(badge_index++);
         m_gui_event.evt_type = GUI_EVT_RECORD;
         m_gui_callback(&m_gui_event);
         k_timer_start(&record_timer, RECORD_TIMER_VALUE, K_NO_WAIT);
@@ -272,7 +272,7 @@ static void cb_mask_event_cb(lv_obj_t *obj, lv_event_t event)
 {
     if (event == LV_EVENT_VALUE_CHANGED)
     {
-        set_masked(lv_roller_get_selected(_roller_names), lv_checkbox_is_checked(obj));
+        set_mask(lv_roller_get_selected(_roller_names), lv_checkbox_is_checked(obj));
         update_namelist();
     }
 }
@@ -292,7 +292,7 @@ static void btn_scan_event_cb(lv_obj_t *obj, lv_event_t event)
     {
         if (m_gui_callback)
         {
-            clear_node_list();
+            clear_badge_list();
             m_gui_event.evt_type = GUI_EVT_SCAN;
             m_gui_callback(&m_gui_event);
         }
@@ -429,8 +429,8 @@ static void kb_event_cb(lv_obj_t *_kb, lv_event_t e)
             const char *name = lv_textarea_get_text(_ta_new_name);
             printk("name: %s\n", name);
             int item = lv_roller_get_selected(_roller_names);
-            set_name(item, name);
-            model_set_name(get_address(item), name);
+            set_badge_name(item, name);
+            model_set_name(get_badge_address(item), name);
             update_namelist();
 
             gus_mode = mode_badge;
@@ -799,12 +799,12 @@ void gui_update_namelist(void)
     k_msgq_put(&m_gui_cmd_queue, &msg, K_NO_WAIT);
 }
 
-void gui_update_progress(uint8_t progress, uint16_t time)
+void gui_update_progress(uint8_t progress, uint16_t infections)
 {
     static gui_message_t msg;
     msg.type = GUI_MSG_PROGRESS;
     msg.params.progress = progress;
-    msg.params.param = time;
+    msg.params.param = infections;
 
     k_msgq_put(&m_gui_cmd_queue, &msg, K_NO_WAIT);
 }
@@ -837,7 +837,7 @@ static void process_cmd_msg_queue(void)
 uint16_t gui_get_selected_addr(void)
 {
     int item = lv_roller_get_selected(_roller_names);
-    return get_address(item);
+    return get_badge_address(item);
 }
 
 /**********************
@@ -845,7 +845,7 @@ uint16_t gui_get_selected_addr(void)
   **********************/
 void gui_run(void)
 {
-    gd_init();
+    init_badge_data();
 
     display_dev = device_get_binding(CONFIG_LVGL_DISPLAY_DEV_NAME);
 

@@ -43,16 +43,16 @@ static void add_exposure(int index, uint32_t exposure, bool update)
 //printk("add ex: %d %d %d\n", badgeA, badgeB, exposure);
     // if either but not both infected, add the exposure to the non-infected
     if (!get_infected(badgeA) && get_infected(badgeB)) {
-        exposure /= (has_mask(badgeA) ? 3 : 1);
-        exposure /= (has_mask(badgeB) ? 10 : 1);
-        exposure /= (has_vaccine(badgeA) ? 50 : 1);
-        gd_add_exposure(badgeA, exposure, update);
+        exposure /= (get_mask(badgeA) ? 3 : 1);
+        exposure /= (get_mask(badgeB) ? 10 : 1);
+        exposure /= (get_vaccine(badgeA) ? 50 : 1);
+        add_exposure_to_badge(badgeA, exposure, update);
     }
     else if (get_infected(badgeA) && !get_infected(badgeB)) {
-        exposure /= (has_mask(badgeB) ? 2 : 1);
-        exposure /= (has_mask(badgeA) ? 10 : 1);
-        exposure /= (has_vaccine(badgeB) ? 50 : 1);
-        gd_add_exposure(badgeB, exposure, update);
+        exposure /= (get_mask(badgeB) ? 2 : 1);
+        exposure /= (get_mask(badgeA) ? 10 : 1);
+        exposure /= (get_vaccine(badgeB) ? 50 : 1);
+        add_exposure_to_badge(badgeB, exposure, update);
     }
 }
 
@@ -72,9 +72,9 @@ static void calculate_exposures(uint16_t t0, uint16_t t1, bool update)
 
 void print_infections(void) 
 {
-    for (int i=0; i<gd_get_node_count(); ++i) {
+    for (int i=0; i<get_badge_count(); ++i) {
         if (get_infected(i)) {
-            printk(" %s,", get_name(i));
+            printk(" %s,", get_badge_name(i));
         }
     }
     printk("\n");
@@ -128,7 +128,7 @@ static void show_number_of_infections(void)
         uint32_t exposure = 100000 / get_distance_squared(i);
         add_exposure(i, exposure, false);
     }
-    uint8_t progress = MIN(100, total_infections() * 100 / gd_get_node_count());
+    uint8_t progress = MIN(100, total_infections() * 100 / get_badge_count());
     gui_update_progress(progress, total_infections());
 }
 

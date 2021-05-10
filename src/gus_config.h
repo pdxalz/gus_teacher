@@ -9,12 +9,14 @@
 #define RSSI_TUNE_CONSTANT 70   // constant used to convert RSSI values to
                                 // reasonable distances between badges. Increasing
                                 // makes contact happen at greater distances.
-#define MAX_GUS_NODES 10        // maximum number of badges allowed.  10 have
+#define MAX_GUS_BADGES 10       // maximum number of badges allowed.  10 have
                                 // been test with no noticable performance
                                 // issues.       
 #define MAX_NAME_LENGTH 12      // maximum length of a students name
 
 #define PLAY_TIMER_VALUE K_SECONDS(2)   // Analyze playback speed
 #define RECORD_TIMER_VALUE K_SECONDS(5) // Speed badge proximity is checked
+
+#define INFECTION_THRESHOLD 200 // distance limit
 
 #endif  //__GUS_CONFIG_H

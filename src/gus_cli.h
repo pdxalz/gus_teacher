@@ -25,7 +25,6 @@ extern "C" {
 #define NUM_PROXIMITY_REPORTS 6             // number of proximity records
                                             // sent in a message
 
-/* .. include_startingpoint_gus_cli_rst_1 */
 /** Company ID of the Bluetooth Mesh Gus Client model. */
 #define BT_MESH_GUS_VENDOR_COMPANY_ID    0xFFFF  // not a real company
 

@@ -130,7 +130,7 @@ static void handle_gus_sign_in_reply(struct bt_mesh_gus *gus,
 				 struct bt_mesh_msg_ctx *ctx,
 				 const uint8_t *msg)
 {
-    gd_add_node(msg, ctx->addr, false, false, false);
+    add_new_badge(msg, ctx->addr, false, false, false);
 }
 
 static void handle_gus_report_reply(struct bt_mesh_gus *gus,
