@@ -1,6 +1,8 @@
 #ifndef CONTACTS_H_
 #define CONTACTS_H_
 
+/////////////////////////////////////////////////////////////////////////////////
+// This module manages the list of contacts between pairs of badges
 // Contacts tracks when two badges are in close proximity.
 // A new contact is added when two badges come near each other.
 // A contact record contains the mesh node address of each of the badges,
@@ -11,6 +13,7 @@
 // time is in seconds from when the contact calculation begins or when recording
 // is started.
 // badge addresses are limited to the range of 1-255
+/////////////////////////////////////////////////////////////////////////////////
 
 // Contact record Get access functions
 

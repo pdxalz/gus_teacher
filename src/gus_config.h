@@ -18,5 +18,7 @@
 #define RECORD_TIMER_VALUE K_SECONDS(5) // Speed badge proximity is checked
 
 #define INFECTION_THRESHOLD 200 // distance limit
+#define RECORDS_PER_STEP 2      // control how big steps are when analyzing
+                                // a classroom simulation
 
 #endif  //__GUS_CONFIG_H

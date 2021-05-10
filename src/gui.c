@@ -200,8 +200,8 @@ static void restart_simulation(void)
 {
     uint8_t rows = lv_spinbox_get_value(_spinbox_rows);
     uint8_t space = lv_spinbox_get_value(_spinbox_space);
-    uint8_t rate = lv_spinbox_get_value(_spinbox_rate);
-    sim_msg_restart(rows, space, rate, gus_tag_mode());
+    uint8_t _infection_rate = lv_spinbox_get_value(_spinbox_rate);
+    sim_msg_restart(rows, space, _infection_rate, gus_tag_mode());
 }
 
 static void stop_playback(void)
