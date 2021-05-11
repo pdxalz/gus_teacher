@@ -8,6 +8,7 @@
 // GUS Client model - API for the Bluetooth Mesh Gus Client model.
 // This code originated from the Nordic Bluetooth mesh chat sample.
 //
+// Messages sent:
 // Sign-in - publishes a message to all nodes requesting the node reply with their
 //     name and it provides a way for the teacher to discover the node
 //     addresses of all active badges in the mesh network.
@@ -18,6 +19,7 @@
 // Message handlers
 // Sign-in reply gets the name and node address of a badge
 // Report reply gets a list of contacts a badge has had recently
+//////////////////////////////////////////////////////////////////////////////
 
 #ifndef BT_MESH_GUS_CLI_H__
 #define BT_MESH_GUS_CLI_H__

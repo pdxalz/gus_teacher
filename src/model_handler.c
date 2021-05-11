@@ -138,7 +138,6 @@ static void handle_gus_report_reply(struct bt_mesh_gus *gus,
         {
             sim_msg_add_contact(badgeA, badgeB, rssi);
         }
-
     }
 }
 
