@@ -58,7 +58,7 @@ void on_gui_event(gui_event_t *event)
 	switch (event->evt_type)
 	{
 	case GUI_EVT_SCAN:
-		model_handler_provision();
+		model_scan_for_badges();
 		gui_update_namelist();
 		update_checkboxes();
 		break;

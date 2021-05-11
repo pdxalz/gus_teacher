@@ -251,7 +251,7 @@ static void record_expiry_function(struct k_timer *timer_id)
 /**********************
  *  GUI event handlers
  **********************/
-static void roller_event_cb(lv_obj_t *obj, lv_event_t event)
+static void roller_namelist_event_cb(lv_obj_t *obj, lv_event_t event)
 {
     if (event == LV_EVENT_VALUE_CHANGED)
     {
@@ -309,6 +309,7 @@ static void btn_scan_event_cb(lv_obj_t *obj, lv_event_t event)
     }
 }
 
+// handles rewind, play, step and record buttons
 static void btn_playback_event_cb(lv_obj_t *obj, lv_event_t event)
 {
     if (m_gui_callback && event == LV_EVENT_CLICKED)
@@ -350,6 +351,7 @@ static void btn_playback_event_cb(lv_obj_t *obj, lv_event_t event)
     }
 }
 
+// number spinbox event handlers
 static void lv_spinbox_rows_increment_event_cb(lv_obj_t *btn, lv_event_t e)
 {
     if (e == LV_EVENT_SHORT_CLICKED || e == LV_EVENT_LONG_PRESSED_REPEAT)
@@ -398,11 +400,11 @@ static void lv_spinbox_rate_decrement_event_cb(lv_obj_t *btn, lv_event_t e)
     }
 }
 
+// Text area for keyboard event handler
 static void ta_event_cb(lv_obj_t *_ta_new_name, lv_event_t e)
 {
     if (e == LV_EVENT_RELEASED)
     {
-
         if (e == LV_EVENT_DEFOCUSED)
         {
             lv_textarea_set_cursor_hidden(_ta_new_name, true);
@@ -410,10 +412,10 @@ static void ta_event_cb(lv_obj_t *_ta_new_name, lv_event_t e)
     }
 }
 
+// keyboard event handler
 static void kb_event_cb(lv_obj_t *_kb, lv_event_t e)
 {
     lv_keyboard_def_event_cb(_keyboard, e);
-
     if (e == LV_EVENT_CANCEL)
     {
         if (_keyboard)
@@ -439,6 +441,7 @@ static void kb_event_cb(lv_obj_t *_kb, lv_event_t e)
     }
 }
 
+// event handlers for mode buttons
 static void btn_badge_event_cb(lv_obj_t *btn, lv_event_t e)
 {
     if (e == LV_EVENT_CLICKED)
@@ -499,7 +502,7 @@ static void badges_create(lv_obj_t *parent)
     lv_obj_set_width(_roller_names, 88);
     lv_obj_set_height(_roller_names, 230);
     lv_obj_set_pos(_roller_names, 2, 5);
-    lv_obj_set_event_cb(_roller_names, roller_event_cb);
+    lv_obj_set_event_cb(_roller_names, roller_namelist_event_cb);
 
     update_namelist();
 
@@ -834,15 +837,17 @@ static void process_cmd_msg_queue(void)
     }
 }
 
+/////////////////////
+// global functions
+/////////////////////
+
 uint16_t gui_get_selected_addr(void)
 {
     int item = lv_roller_get_selected(_roller_names);
     return get_badge_address(item);
 }
 
-/**********************
-  *   GLOBAL FUNCTIONS
-  **********************/
+
 void gui_run(void)
 {
     init_badge_data();

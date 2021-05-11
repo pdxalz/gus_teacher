@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
+
 #include <bluetooth/mesh.h>
 #include "gus_cli.h"
 #include "mesh/net.h"

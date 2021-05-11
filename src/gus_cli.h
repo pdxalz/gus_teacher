@@ -4,12 +4,20 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-/**
- * @file
- * @defgroup bt_mesh_gus_cli
- * @{
- * @brief API for the Bluetooth Mesh Gus Client model.
- */
+//////////////////////////////////////////////////////////////////////////////
+// GUS Client model - API for the Bluetooth Mesh Gus Client model.
+// This code originated from the Nordic Bluetooth mesh chat sample.
+//
+// Sign-in - publishes a message to all nodes requesting the node reply with their
+//     name and it provides a way for the teacher to discover the node
+//     addresses of all active badges in the mesh network.
+// Set state - sends a message or to the whole group to change the state
+// Set name - allows the teacher to rename the badge
+// Report - sends a message to request a report of all contacts a badge has had
+// 
+// Message handlers
+// Sign-in reply gets the name and node address of a badge
+// Report reply gets a list of contacts a badge has had recently
 
 #ifndef BT_MESH_GUS_CLI_H__
 #define BT_MESH_GUS_CLI_H__

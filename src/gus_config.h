@@ -1,6 +1,10 @@
 #ifndef __GUS_CONFIG_H
 #define __GUS_CONFIG_H
 
+/////////////////////////////////////////
+// GUS constants to configure the system
+/////////////////////////////////////////
+
 #define DEMO_VIDEO_ACCEL 100    // Magnify time for demo video
 
 #define MAX_CONTACTS 5000       // Maximum number of contact records allowed

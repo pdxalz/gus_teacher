@@ -3,6 +3,7 @@
 
 #include <zephyr.h>
 
+// message types for simulator message queue
 typedef enum
 {
     SIM_MSG_RESTART,
@@ -10,6 +11,7 @@ typedef enum
     SIM_MSG_ADD_CONTACT
 } sim_msg_type_t;
 
+// message parameters
 typedef struct
 {
     sim_msg_type_t type;

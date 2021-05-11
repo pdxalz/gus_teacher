@@ -10,9 +10,9 @@
 #include "model_handler.h"
 #include "gui.h"
 
-/*********************
-  *      DEFINITIONS
-  *********************/
+////////////////////////
+// declarations
+////////////////////////
 struct gus_node
 {
     char name[MAX_NAME_LENGTH];
@@ -24,15 +24,15 @@ struct gus_node
     uint32_t exposure;
 };
 
-/**********************
- *  STATIC VARIABLES
- **********************/
+////////////////////
+// static variables
+////////////////////
 struct gus_node _gus_badges[MAX_GUS_BADGES];
 uint16_t _badge_count;
 
-/**********************
- *   STATIC FUNCTIONS
- **********************/
+/////////////////////
+// Static functions
+/////////////////////
 
 // updates the state of the badge to reflect the current health state
 // index: index of the badge
@@ -85,9 +85,9 @@ int cmpfunc(const void *a, const void *b)
     //   return ( *(int*)a - *(int*)b );
 }
 
-/**********************
- *   GLOBAL FUNCTIONS
- **********************/
+/////////////////////
+// global functions
+/////////////////////
 uint16_t get_badge_count(void)
 {
     __ASSERT_NO_MSG(_badge_count < MAX_GUS_BADGES);

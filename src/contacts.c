@@ -33,14 +33,14 @@ static struct contact _contact_list[MAX_CONTACTS];
 // adds a new contact recored
 static void add_contact(uint16_t badgeA, uint16_t badgeB, uint32_t start_time, uint32_t end_time, double distance)
 {
-    __ASSERT(_total_contacts < MAX_CONTACTS, ERR_BAD_PARAM);
+    __ASSERT(_total_contacts < MAX_CONTACTS, "bad param");
 
     _contact_list[_total_contacts].badgeA = badgeA;
     _contact_list[_total_contacts].badgeB = badgeB;
     _contact_list[_total_contacts].start_time = start_time;
     _contact_list[_total_contacts].end_time = end_time;
 
-    __ASSERT(distance != 0, ERR_BAD_PARAM);
+    __ASSERT(distance != 0, "bad param");
     _contact_list[_total_contacts].distance = distance;
     printk("added %4d %4d %4d %4d %4d\n", _total_contacts, badgeA, start_time, end_time, (int)distance); 
     _total_contacts++;
