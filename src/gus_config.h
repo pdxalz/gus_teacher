@@ -10,9 +10,9 @@
 #define MAX_CONTACTS 5000       // Maximum number of contact records allowed
 #define SAFE_DISTANCE 100       // Contact records not added if over this
 #define TIME_PER_CONTACT (1 * 60 * 10)  // time between calculated records
-#define RSSI_TUNE_CONSTANT 70   // constant used to convert RSSI values to
-                                // reasonable distances between badges. Increasing
-                                // makes contact happen at greater distances.
+#define RSSI_TUNE_CONSTANT 58   // constant used to convert RSSI values to
+                                //  reasonable distances between badges. Lowering
+                                //  means badges need to be closer to be a contact.
 #define MAX_GUS_BADGES 10       // maximum number of badges allowed.  10 have
                                 // been test with no noticable performance
                                 // issues.       
