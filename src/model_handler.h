@@ -18,12 +18,22 @@
 extern "C" {
 #endif
 
-
+// initialize the model handler
 const struct bt_mesh_comp *model_handler_init(void);
-void model_handler_provision(void);
-void model_handler_set_state(uint16_t index, enum bt_mesh_gus_state state);
+
+// Sends a message to the badge to set its state
+// addr - node address of the badge
+// state - new gus state
+void model_handler_set_state(uint16_t addr, enum bt_mesh_gus_state state);
+
+// Sends a sign-in message to all badges to retreive active names and addresses
 void model_scan_for_badges(void);
+
+// SEnds a message to assign a new name to a badge
 void model_set_name(uint16_t addr, const uint8_t *name);
+
+// Sends a message to request a contact report from a badge
+// addr - node address of the badge
 void model_report_request(uint16_t addr);
 
 

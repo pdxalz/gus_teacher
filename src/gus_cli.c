@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
+
 #include <bluetooth/mesh.h>
 #include "gus_cli.h"
 #include "mesh/net.h"
@@ -31,7 +32,13 @@ BUILD_ASSERT(BT_MESH_MODEL_BUF_LEN(BT_MESH_GUS_OP_REPORT_REPLY,
 		    BT_MESH_TX_SDU_MAX,
 	     "The report reply message must fit inside an application SDU.");
 
+/////////////////////
+// Static functions
+/////////////////////
 
+
+// extract the name from the message buffer
+// buf: message buffer
 static const uint8_t *extract_name(struct net_buf_simple *buf)
 {
 	buf->data[buf->len - 1] = '\0';

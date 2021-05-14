@@ -45,11 +45,11 @@ void gui_update_namelist(void);
 void update_checkboxes(void);
 
 // Add a GUI message to update the analyze progress bar
-void gui_update_progress(uint8_t progress, uint16_t time);
+// progress: percent progress complete, or percentage of infections if gus-tag mode
+void gui_update_progress(uint8_t progress, uint16_t infections);
 
 // returns the node address of the selected item
 uint16_t gui_get_selected_addr(void);
 
-// empties the node list
-void clear_node_list(void);
+
 #endif

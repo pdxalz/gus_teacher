@@ -33,14 +33,14 @@ static struct contact _contact_list[MAX_CONTACTS];
 // adds a new contact recored
 static void add_contact(uint16_t badgeA, uint16_t badgeB, uint32_t start_time, uint32_t end_time, double distance)
 {
-    __ASSERT(_total_contacts < MAX_CONTACTS, ERR_BAD_PARAM);
+    __ASSERT(_total_contacts < MAX_CONTACTS, "bad param");
 
     _contact_list[_total_contacts].badgeA = badgeA;
     _contact_list[_total_contacts].badgeB = badgeB;
     _contact_list[_total_contacts].start_time = start_time;
     _contact_list[_total_contacts].end_time = end_time;
 
-    __ASSERT(distance != 0, ERR_BAD_PARAM);
+    __ASSERT(distance != 0, "bad param");
     _contact_list[_total_contacts].distance = distance;
     printk("added %4d %4d %4d %4d %4d\n", _total_contacts, badgeA, start_time, end_time, (int)distance); 
     _total_contacts++;
@@ -65,7 +65,7 @@ static uint8_t calc_distance(int badgeA, int badgeB, uint8_t rows, uint8_t space
 
 
 /////////////////////
-// non-static functions
+// global functions
 /////////////////////
 uint16_t get_total_contacts(void)
 {
@@ -110,13 +110,13 @@ void simulate_contacts(uint8_t rows, uint8_t space)
     _total_contacts = 0;
     uint16_t time = 0;
     uint8_t distance;
-    uint8_t node_count = gd_get_node_count();
+    uint8_t _badge_count = get_badge_count();
 
     for (uint16_t i = 1; i < 10; ++i)
     { 
-        for (uint8_t badgeA = 0; badgeA < node_count; ++badgeA)
+        for (uint8_t badgeA = 0; badgeA < _badge_count; ++badgeA)
         {
-            for (uint8_t badgeB = 0; badgeB < gd_get_node_count(); ++badgeB)
+            for (uint8_t badgeB = 0; badgeB < get_badge_count(); ++badgeB)
             {
                 if (badgeA == badgeB)
                     continue;
@@ -145,10 +145,10 @@ void add_proximity_contact(uint16_t addr1, uint16_t addr2, int8_t rssi)
 {
     // time in seconds since proximity checks were restarted
     uint32_t current_time = (k_uptime_get_32() - prox_start_time) / 1000;
-    uint32_t interval = gd_get_node_count();
+    uint32_t interval = get_badge_count();
 
-    uint16_t badgeA = get_badge_from_address(addr1);
-    uint16_t badgeB = get_badge_from_address(addr2);
+    uint16_t badgeA = get_badge_index_from_address(addr1);
+    uint16_t badgeB = get_badge_index_from_address(addr2);
     if (rssi > -RSSI_TUNE_CONSTANT)
     {
         current_time *= DEMO_VIDEO_ACCEL;
