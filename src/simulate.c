@@ -173,7 +173,7 @@ static void rewind_sim(void)
         model_handler_set_state(0, BT_MESH_GUS_OFF);
     }
     _step_time = get_start_time(0);
-    gui_update_progress(0, 0);
+    gui_update_progress(total_infections() / get_badge_count(), total_infections());
 }
 
 // Restarts the simulation for the classroom mode.
@@ -186,7 +186,7 @@ static void restart_sim(uint8_t rows, uint8_t space)
     reset_exposures();
     update_state_for_all_badges();
     _step_time = 0;
-    gui_update_progress(0, 0);
+    gui_update_progress(0, total_infections());
 }
 
 // handle the next step message in classroom mode
@@ -228,13 +228,13 @@ static void process_sim_msg_queue(void)
             }
             break;
         case SIM_MSG_NEXT:
-            if (sim_message.params.tag_mode)
+            if (sim_message.params.tag_mode == TAG_MODE_CLASSROOM)
             {
-                apply_infections_next_step();
+                next_analysis_point();
             }
             else
             {
-                next_analysis_point();
+                apply_infections_next_step();
             }
 
             break;

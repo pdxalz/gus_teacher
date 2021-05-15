@@ -135,7 +135,6 @@ void simulate_contacts(uint8_t rows, uint8_t space)
 
 void reset_proximity_contacts(void)
 {
-printk("reset prox contacts\n");
     prox_start_time = k_uptime_get_32();
     _total_contacts = 0;
 }

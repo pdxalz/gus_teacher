@@ -342,15 +342,14 @@ static void btn_playback_event_cb(lv_obj_t *obj, lv_event_t event)
             stop_playback();
             if (lv_btn_get_state(_btn_record) == LV_BTN_STATE_CHECKED_RELEASED)
             {
-//                reset_proximity_contacts();
-
+                // start recording
                 set_live_mode(lv_dropdown_get_selected(_dd_sim_mode)==2);
-
                 k_timer_start(&record_timer, RECORD_TIMER_VALUE, K_NO_WAIT);
             }
             else
             {
                 k_timer_stop(&record_timer);
+                restart_simulation();
             }
         }
     }
