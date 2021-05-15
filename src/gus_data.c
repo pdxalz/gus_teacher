@@ -54,8 +54,8 @@ static void update_badge_health_state(uint8_t index, bool initializing)
     {
         return;
     }
-    //    printk("update node %d %d %d\n", index, state, initializing);
-    //    k_sleep(K_MSEC(120));
+//        printk("update node %d %d %d\n", index, state, initializing);
+//        k_sleep(K_MSEC(50));
     model_handler_set_state(get_badge_address(index), state);
 }
 
@@ -291,24 +291,21 @@ void add_exposure_to_badge(int index, uint32_t exposure, bool update)
     }
 }
 
-void reset_exposures(bool update)
+void reset_exposures(void)
 {
-
-    // publish health to all
-    if (update)
-    {
-        model_handler_set_state(0, BT_MESH_GUS_HEALTHY);
-    }
-    printk("All green\n");
     for (int i = 0; i < get_badge_count(); ++i)
     {
         set_exposure(i, 0);
         set_infected(i, get_patient_zero(i));
-        if (update)
-        {
-            printk("patient zero %d\n", i);
-            update_badge_health_state(i, true);
-        }
+    }
+}
+
+void update_state_for_all_badges(void)
+{
+    model_handler_set_state(0, BT_MESH_GUS_HEALTHY);
+    for (int i = 0; i < get_badge_count(); ++i)
+    {
+        update_badge_health_state(i, true);
     }
 }
 

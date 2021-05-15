@@ -23,7 +23,7 @@ typedef struct
             uint8_t rows;
             uint8_t space;
             uint8_t infection_rate;
-            bool tag_mode;
+            uint8_t tag_mode;
         };
         struct
         {
@@ -34,13 +34,18 @@ typedef struct
     } params;
 } sim_message_t;
 
+
+// set live_mode.  
+// live_mode: if true health status is sent to the badges during recording
+void set_live_mode(bool live_mode);
+
 // Sends a message to the simalation message queue to restart the simulation. 
 // Basicly a rewind of the sim playback.
 // rows: number of row the class is organized into, for classroom mode
 // space: distance between the rows, for classroom mode
 // infection_rate: rate of the spread of infection, both modes 
-// tag_mode: true if GUS tag mode, false if classroom mode
-void sim_msg_restart(uint8_t rows, uint8_t space, uint8_t infection_rate, bool tag_mode);
+// tag_mode: GUS tag mode
+void sim_msg_restart(uint8_t rows, uint8_t space, uint8_t infection_rate, uint8_t tag_mode);
 
 // Sends a message to the simalation message queue to process the next step
 // of the simulation

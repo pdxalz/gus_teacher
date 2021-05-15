@@ -22,6 +22,7 @@ typedef struct
 // GUI message queue types and message structure
 typedef enum  {GUI_MSG_UPDATE_LIST, GUI_MSG_PROGRESS} gui_msg_type_t;
 
+typedef enum {TAG_MODE_CLASSROOM, TAG_MODE_TAG, TAG_MODE_LIVE} tag_mode_t;
 typedef struct
 {
 	gui_msg_type_t type;

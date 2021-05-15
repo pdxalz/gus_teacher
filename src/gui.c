@@ -109,10 +109,11 @@ K_TIMER_DEFINE(record_timer, record_expiry_function, NULL);
  *   STATIC FUNCTIONS
  **********************/
 // returns : true if in gus tag mode, false if in classroom mode
-static bool gus_tag_mode(void)
+static tag_mode_t gus_tag_mode(void)
 {
-    //printk("tag: %d\n", lv_dropdown_get_selected(dd_sim_mode));
-    return lv_dropdown_get_selected(_dd_sim_mode) == 1;
+    uint8_t sim_mode = lv_dropdown_get_selected(_dd_sim_mode);
+    printk("tag: %d\n", sim_mode);
+    return sim_mode;
 }
 
 static uint16_t btnstate(enum gus_mode mode)
@@ -156,7 +157,8 @@ static void update_control_visibility(void)
     lv_obj_set_hidden(_label_rate, gus_mode != mode_config);
 
     lv_obj_set_hidden(_bar_progress, gus_mode != mode_analyze);
-    lv_obj_set_hidden(_btn_record, gus_mode != mode_analyze || !gus_tag_mode());
+    lv_obj_set_hidden(_btn_record, gus_mode != mode_analyze ||
+                        gus_tag_mode() == TAG_MODE_CLASSROOM);
     lv_obj_set_hidden(_btn_rewind, gus_mode != mode_analyze);
     lv_obj_set_hidden(_btn_play, gus_mode != mode_analyze);
     lv_obj_set_hidden(_btn_next, gus_mode != mode_analyze);
@@ -340,7 +342,10 @@ static void btn_playback_event_cb(lv_obj_t *obj, lv_event_t event)
             stop_playback();
             if (lv_btn_get_state(_btn_record) == LV_BTN_STATE_CHECKED_RELEASED)
             {
-                reset_proximity_contacts();
+//                reset_proximity_contacts();
+
+                set_live_mode(lv_dropdown_get_selected(_dd_sim_mode)==2);
+
                 k_timer_start(&record_timer, RECORD_TIMER_VALUE, K_NO_WAIT);
             }
             else
@@ -556,8 +561,9 @@ static void configure_create(lv_obj_t *parent)
 
     _dd_sim_mode = lv_dropdown_create(parent, NULL);
     lv_obj_set_style_local_value_str(_dd_sim_mode, LV_CONT_PART_MAIN, LV_STATE_DEFAULT, "Dropdown");
-    lv_dropdown_set_options(_dd_sim_mode, " Classroom\n GUS Tag");
-    lv_obj_set_pos(_dd_sim_mode, 110, 20 + zoff);
+    lv_dropdown_set_options(_dd_sim_mode, " Classroom\n GUS Tag\n GUS Tag Live");
+    lv_obj_set_width(_dd_sim_mode, 150);
+    lv_obj_set_pos(_dd_sim_mode, 100, 20 + zoff);
 
     // rows spinner
     _label_rows = lv_label_create(parent, NULL);

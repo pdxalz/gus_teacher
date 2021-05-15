@@ -42,7 +42,7 @@ static void add_contact(uint16_t badgeA, uint16_t badgeB, uint32_t start_time, u
 
     __ASSERT(distance != 0, "bad param");
     _contact_list[_total_contacts].distance = distance;
-    printk("added %4d %4d %4d %4d %4d\n", _total_contacts, badgeA, start_time, end_time, (int)distance); 
+//    printk("added %4d %4d %4d %4d %4d\n", _total_contacts, badgeA, start_time, end_time, (int)distance); 
     _total_contacts++;
 
 }

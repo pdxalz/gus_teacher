@@ -92,9 +92,10 @@ void set_exposure(int index, uint32_t exposure);
 void add_exposure_to_badge(int index, uint32_t exposure, bool update);
 
 // initializes the exposure of all nodes to zero
-// update: if true, publishes a set state healthy message to all badges
-//      then sends a set state message infected to all patient zero badges
-void reset_exposures(bool update);
+void reset_exposures();
+
+// updates the state for all badges
+void update_state_for_all_badges(void);
 
 // initializes the simulation settings
 void init_badge_data(void);

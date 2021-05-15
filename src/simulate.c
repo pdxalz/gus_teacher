@@ -20,7 +20,7 @@ static uint16_t _time_of_last_exposure;
 static uint16_t _time_to_complete;
 static uint16_t _current_step_index;
 static bool _first_step;
-
+static bool _live_mode;
 
 // calculates the amount of exposure for a time range
 // index: index in the contact data array
@@ -102,7 +102,7 @@ void print_infections(void)
 static void calc_time_to_complete(void)
 {
     _step_time = 0;
-    reset_exposures(false);
+    reset_exposures();
 
     while (_step_time < final_time() && !everyone_infected())
     {
@@ -113,14 +113,16 @@ static void calc_time_to_complete(void)
 }
 
 
-// Takes another step in the analysis in classroom mode.  Determines how many
+// Takes another step in the analysis in GUS Tag mode.  Determines how many
 // infections have occurred to this point.  Updates the GUI progress with
 // the percentage of how far we have stepped through the simulation.
 static void apply_infections_next_step(void)
 {
     if (_first_step)
     {
-        reset_exposures(true);
+        printk("first step %d\n", _live_mode);
+        reset_exposures();
+        update_state_for_all_badges();
         _first_step = false;
     }
     for (int i = 0; i < RECORDS_PER_STEP; ++i)
@@ -143,11 +145,11 @@ static void apply_infections_next_step(void)
 // that have been infected.  Used in GUS tag mode.
 static void show_number_of_infections(void)
 {
-    reset_exposures(false);
+    reset_exposures();
     for (int i = 0; i < get_total_contacts(); ++i)
     {
         uint32_t exposure = 100000 / get_distance_squared(i);
-        add_exposure(i, exposure, false);
+        add_exposure(i, exposure, _live_mode);
     }
     uint8_t progress = MIN(100, total_infections() * 100 / get_badge_count());
     gui_update_progress(progress, total_infections());
@@ -161,7 +163,15 @@ static void rewind_sim(void)
     _current_step_index = 0;
     _time_to_complete = final_time();
     printk("complete: %d\n", _time_to_complete);
-    reset_exposures(false);
+    reset_exposures();
+    if (_live_mode) 
+    {
+        update_state_for_all_badges();
+    }
+    else
+    {
+        model_handler_set_state(0, BT_MESH_GUS_OFF);
+    }
     _step_time = get_start_time(0);
     gui_update_progress(0, 0);
 }
@@ -173,12 +183,13 @@ static void restart_sim(uint8_t rows, uint8_t space)
     simulate_contacts(rows, space);
     calc_time_to_complete();
  //   printk("complete: %d\n", _time_to_complete);
-    reset_exposures(true);
+    reset_exposures();
+    update_state_for_all_badges();
     _step_time = 0;
     gui_update_progress(0, 0);
 }
 
-// handle the next step message
+// handle the next step message in classroom mode
 static void next_analysis_point(void)
 {
     calculate_exposures(_step_time, _step_time + _step_interval, true);
@@ -205,7 +216,9 @@ static void process_sim_msg_queue(void)
         {
         case SIM_MSG_RESTART:
             _infection_rate = sim_message.params.infection_rate;
-            if (sim_message.params.tag_mode)
+            _live_mode = sim_message.params.tag_mode != TAG_MODE_TAG;
+            printk("restart %d %d\n", sim_message.params.tag_mode, _live_mode);
+            if (sim_message.params.tag_mode != TAG_MODE_CLASSROOM)
             {
                 rewind_sim();
             }
@@ -252,7 +265,13 @@ K_THREAD_DEFINE(sim_thread, 4096, sim_run, NULL, NULL, NULL, 7, 0, 0);
 /////////////////////
 // global functions
 /////////////////////
-void sim_msg_restart(uint8_t rows, uint8_t space, uint8_t infection_rate, bool tag_mode)
+void set_live_mode(bool live_mode)
+{
+    _live_mode = live_mode;
+    reset_proximity_contacts();
+}
+
+void sim_msg_restart(uint8_t rows, uint8_t space, uint8_t infection_rate, uint8_t tag_mode)
 {
     static sim_message_t msg;
     msg.type = SIM_MSG_RESTART;
@@ -260,7 +279,7 @@ void sim_msg_restart(uint8_t rows, uint8_t space, uint8_t infection_rate, bool t
     msg.params.rows = rows;
     msg.params.space = space;
     msg.params.infection_rate = infection_rate;
-
+printk("msg restart %d\n", tag_mode);
     k_msgq_put(&_sim_cmd_queue, &msg, K_NO_WAIT);
 }
 
