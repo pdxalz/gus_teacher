@@ -211,8 +211,6 @@ void model_report_request(uint16_t addr)
 {
     int err;
 
-    //    printk("requesting report %d\n", addr);
-
     err = bt_mesh_gus_cli_report_request(&gus, addr);
     if (err)
     {

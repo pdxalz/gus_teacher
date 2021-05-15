@@ -120,7 +120,6 @@ static void apply_infections_next_step(void)
 {
     if (_first_step)
     {
-        printk("first step %d\n", _live_mode);
         reset_exposures();
         update_state_for_all_badges();
         _first_step = false;
@@ -162,7 +161,6 @@ static void rewind_sim(void)
     _first_step = true;
     _current_step_index = 0;
     _time_to_complete = final_time();
-    printk("complete: %d\n", _time_to_complete);
     reset_exposures();
     if (_live_mode) 
     {
@@ -182,7 +180,6 @@ static void restart_sim(uint8_t rows, uint8_t space)
 {
     simulate_contacts(rows, space);
     calc_time_to_complete();
- //   printk("complete: %d\n", _time_to_complete);
     reset_exposures();
     update_state_for_all_badges();
     _step_time = 0;
@@ -196,7 +193,6 @@ static void next_analysis_point(void)
     print_infections();
     _step_time += _step_interval;
 
-//    printk("exposure: %d %d %d %d \n", _step_time, get_exposure(1), get_exposure(2), get_exposure(3));
     if (_time_to_complete != 0)
     {
         uint8_t progress = MIN(100, _step_time * 100 / _time_to_complete);
@@ -217,7 +213,6 @@ static void process_sim_msg_queue(void)
         case SIM_MSG_RESTART:
             _infection_rate = sim_message.params.infection_rate;
             _live_mode = sim_message.params.tag_mode != TAG_MODE_TAG;
-            printk("restart %d %d\n", sim_message.params.tag_mode, _live_mode);
             if (sim_message.params.tag_mode != TAG_MODE_CLASSROOM)
             {
                 rewind_sim();
@@ -279,7 +274,6 @@ void sim_msg_restart(uint8_t rows, uint8_t space, uint8_t infection_rate, uint8_
     msg.params.rows = rows;
     msg.params.space = space;
     msg.params.infection_rate = infection_rate;
-printk("msg restart %d\n", tag_mode);
     k_msgq_put(&_sim_cmd_queue, &msg, K_NO_WAIT);
 }
 

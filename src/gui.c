@@ -112,7 +112,6 @@ K_TIMER_DEFINE(record_timer, record_expiry_function, NULL);
 static tag_mode_t gus_tag_mode(void)
 {
     uint8_t sim_mode = lv_dropdown_get_selected(_dd_sim_mode);
-    printk("tag: %d\n", sim_mode);
     return sim_mode;
 }
 
@@ -306,7 +305,6 @@ static void btn_scan_event_cb(lv_obj_t *obj, lv_event_t event)
             m_gui_event.evt_type = GUI_EVT_IDENTIFY;
             m_gui_event.addr = selected_address();
             m_gui_callback(&m_gui_event);
-            printk("%d\n", m_gui_event.addr);
         }
     }
 }
@@ -433,7 +431,6 @@ static void kb_event_cb(lv_obj_t *_kb, lv_event_t e)
         if (_keyboard)
         {
             const char *name = lv_textarea_get_text(_ta_new_name);
-            printk("name: %s\n", name);
             int item = lv_roller_get_selected(_roller_names);
             set_badge_name(item, name);
             model_set_name(get_badge_address(item), name);
@@ -837,7 +834,7 @@ static void process_cmd_msg_queue(void)
             break;
 
         default:
-            printk("m: %d\n", cmd_message.type);
+            printk("bad message: %d\n", cmd_message.type);
         }
     }
 }
